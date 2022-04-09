@@ -1,11 +1,20 @@
 const { clickupCdk } = require('@time-loop/clickup-projen');
+
+const peerDeps = ['constructs@^10.0.5', 'multi-convention-namer@^0.1.11'];
+
 const project = new clickupCdk.ClickUpCdkConstructLibrary({
   name: '@time-loop/cdk-aurora',
-  cdkVersion: '2.20.0',
+
+  cdkVersion: '2.17.0',
   defaultReleaseBranch: 'main',
-  devDeps: ['@time-loop/clickup-projen'],
+  licensed: true,
+
+  deps: [...peerDeps],
+  devDeps: [...peerDeps, '@time-loop/clickup-projen'],
+  peerDeps,
+
+  repositoryUrl: '', // leverage default
   authorName: '', // leverage default
   authorAddress: '', // leverage default
-  repositoryUrl: 'https://github.com/time-loop/cdk-aurora.git', // TODO: leverage default
 });
 project.synth();
