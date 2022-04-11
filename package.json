@@ -36,13 +36,13 @@
     "organization": true
   },
   "devDependencies": {
-    "@time-loop/clickup-projen": "^0.0.31",
+    "@time-loop/clickup-projen": "^0.0.32",
     "@types/jest": "^27.4.1",
     "@types/node": "^14",
     "@typescript-eslint/eslint-plugin": "^5",
     "@typescript-eslint/parser": "^5",
-    "aws-cdk-lib": "2.20.0",
-    "constructs": "10.0.5",
+    "aws-cdk-lib": "2.17.0",
+    "constructs": "^10.0.5",
     "esbuild": "^0.14.34",
     "eslint": "^8",
     "eslint-config-prettier": "^8.5.0",
@@ -58,6 +58,7 @@
     "jsii-pacmak": "^1.56.0",
     "jsii-release": "^0.2.316",
     "json-schema": "^0.4.0",
+    "multi-convention-namer": "^0.1.11",
     "npm-check-updates": "^12",
     "prettier": "^2.6.2",
     "projen": "^0.54.14",
@@ -66,8 +67,13 @@
     "typescript": "^4.6.3"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.20.0",
-    "constructs": "^10.0.5"
+    "aws-cdk-lib": "^2.17.0",
+    "constructs": "^10.0.5",
+    "multi-convention-namer": "^0.1.11"
+  },
+  "dependencies": {
+    "constructs": "^10.0.5",
+    "multi-convention-namer": "^0.1.11"
   },
   "keywords": [
     "cdk"
@@ -76,7 +82,7 @@
     "node": ">= 14.17.0"
   },
   "main": "lib/index.js",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
   },
