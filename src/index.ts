@@ -12,19 +12,7 @@ import {
 import { Construct } from 'constructs';
 import { Namer } from 'multi-convention-namer';
 
-// export interface DbUser {
-//   /**
-//    * The name of the dbUser.
-//    * Will be rendered in snake_case for the DB.
-//    */
-//   readonly name: Namer;
-//   /**
-//    * This only affects the default privileges grants inside the db.
-//    *
-//    * @default false by default a "reader"
-//    */
-//   readonly isWriter?: boolean;
-// }
+const passwordRotationVersion = '1.1.217';
 
 export interface AuroraProps {
   /**
@@ -127,11 +115,6 @@ export class Aurora extends Construct {
     const instanceType =
       props.instanceType || aws_ec2.InstanceType.of(aws_ec2.InstanceClass.T3, aws_ec2.InstanceSize.MEDIUM);
 
-    // const users: DbUser[] = props.users ?? [
-    //   { name: new Namer(['reader']) },
-    //   { name: new Namer(['writer']), isWriter: true },
-    // ];
-
     const secretName = id.addSuffix(['manager']);
 
     this.cluster = new aws_rds.DatabaseCluster(this, 'Database', {
@@ -176,7 +159,7 @@ export class Aurora extends Construct {
     const managerRotation = this.cluster.addRotationSingleUser();
     // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
     const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
-    managerSarMapping.setValue('aws', 'semanticVersion', '1.1.217');
+    managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
 
     // User management
     // const serviceToken = core.Param.get(this, '', { rootId: 'infra', stackId: '', constructId: '' });
@@ -205,7 +188,7 @@ export class Aurora extends Construct {
         const rotation = this.cluster.addRotationMultiUser(user.pascal, { secret });
         // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
         const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;
-        sarMapping.setValue('aws', 'semanticVersion', '1.1.217');
+        sarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
       }
       return secret;
     });
