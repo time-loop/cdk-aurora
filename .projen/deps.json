@@ -5,6 +5,10 @@
       "type": "build"
     },
     {
+      "name": "@types/aws-lambda",
+      "type": "build"
+    },
+    {
       "name": "@types/jest",
       "type": "build"
     },
@@ -140,6 +144,18 @@
       "name": "multi-convention-namer",
       "version": "^0.1.11",
       "type": "peer"
+    },
+    {
+      "name": "aws-lambda",
+      "type": "runtime"
+    },
+    {
+      "name": "aws-sdk",
+      "type": "runtime"
+    },
+    {
+      "name": "aws-xray-sdk-core",
+      "type": "runtime"
     },
     {
       "name": "constructs",

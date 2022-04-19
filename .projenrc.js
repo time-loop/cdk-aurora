@@ -1,5 +1,6 @@
 const { clickupCdk } = require('@time-loop/clickup-projen');
 
+const bundledDeps = [];
 const peerDeps = ['constructs@^10.0.5', 'multi-convention-namer@^0.1.11'];
 
 const project = new clickupCdk.ClickUpCdkConstructLibrary({
@@ -9,8 +10,9 @@ const project = new clickupCdk.ClickUpCdkConstructLibrary({
   defaultReleaseBranch: 'main',
   licensed: true,
 
-  deps: [...peerDeps],
-  devDeps: [...peerDeps, '@time-loop/clickup-projen'],
+  bundledDeps,
+  deps: [...peerDeps, 'aws-lambda', 'aws-sdk', 'aws-xray-sdk-core'],
+  devDeps: [...peerDeps, '@time-loop/clickup-projen', '@types/aws-lambda'],
   peerDeps,
 
   repositoryUrl: '', // leverage default
