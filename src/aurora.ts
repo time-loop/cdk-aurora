@@ -1,4 +1,5 @@
 import {
+  Annotations,
   aws_ec2,
   aws_iam,
   aws_kms,
@@ -87,29 +88,16 @@ export interface AuroraProps {
  *  });
  * ```
  *
- * NOTE: After deploying this in bootstrap mode, find the reader and writer secrets and add
- * ```
- * engine: postgres
- * host: ${{ cluster.clusterEndpoint }} // you'll have to look this up. Easiest way is to just look at the manager secret.
- * ```
- * to both secrets. Then deploy without bootstrap.
- * See: https://github.com/aws/aws-cdk/issues/19794
- * for details.
- *
- * Also! Looks like the multiRotation stuff doesn't actually... create the user.
- * Could just be because it's really old?
- * Trying https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223 to see if that helps.
- *
- * So... we're going to need to build a lambda / custom resource to create the users.
- * Unfortunate. Grants:
+ * We have a CustomResource which fills the gap of creating the users
+ * and provisioning some default grants:
  *
  * ```sql
- * GRANT USAGE ON DATABASE clickup TO "my_stack_reader";
+ * GRANT CONNECT ON DATABASE defaultDatabaseName TO "my_stack_reader";
  * GRANT USAGE ON SCHEMA public TO "my_stack_reader";
  * ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO "my_stack_reader";
  * ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO "my_stack_reader";
  *
- * GRANT USAGE ON DATABASE clickup TO "my_stack_writer";
+ * GRANT CONNECT ON DATABASE defaultDatabaseName TO "my_stack_writer";
  * GRANT USAGE ON SCHEMA public TO "my_stack_writer";
  * ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO "my_stack_writer";
  * ALTER DEFAULT PRIVILEGES GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "my_stack_writer";
@@ -126,7 +114,12 @@ export class Aurora extends Construct {
 
     const encryptionKey = (this.kmsKey = props.kmsKey);
     const instanceType =
-      props.instanceType || aws_ec2.InstanceType.of(aws_ec2.InstanceClass.T3, aws_ec2.InstanceSize.MEDIUM);
+      props.instanceType || aws_ec2.InstanceType.of(aws_ec2.InstanceClass.T4G, aws_ec2.InstanceSize.MEDIUM);
+    if (instanceType.architecture !== aws_ec2.InstanceArchitecture.ARM_64) {
+      Annotations.of(this).addWarning(
+        `Instance type ${instanceType.toString()} is not ARM64. Please consider using the more cost effective graviton based instances.`,
+      );
+    }
 
     const secretName = id.addSuffix(['manager']);
 
@@ -175,6 +168,7 @@ export class Aurora extends Construct {
     managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
 
     // Deploy user provisioner custom resource
+    // See: https://github.com/aws/aws-cdk/issues/19794 for details.
     const onEventHandler = new aws_lambda_nodejs.NodejsFunction(this, 'provisioner', {
       bundling: {
         externalModules: ['aws-lambda', 'aws-sdk'], // Lambda is just types. SDK is explicitly provided.

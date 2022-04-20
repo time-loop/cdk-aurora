@@ -31,6 +31,11 @@ describe('Aurora', () => {
         isWriter: true,
       });
     });
+    it('uses t4g.medium', () => {
+      template.hasResourceProperties('AWS::RDS::DBInstance', {
+        DBInstanceClass: 'db.t4g.medium',
+      });
+    });
 
     // it('outputs ProxyEndpoint', () => {
     //   template.hasOutput('ProxyEndpoint', {});
@@ -78,6 +83,23 @@ describe('Aurora', () => {
       template.hasResourceProperties('AWS::RDS::DBInstance', {
         DBInstanceClass: 'db.r6g.24xlarge',
       });
+    });
+    it('instanceType warns when not Graviton', () => {
+      const app = new App();
+      const stack = new Stack(app, 'test');
+      const kmsKey = new aws_kms.Key(stack, 'Key');
+      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
+      new Aurora(stack, new Namer(['test']), {
+        instanceType: aws_ec2.InstanceType.of(aws_ec2.InstanceClass.R5, aws_ec2.InstanceSize.XLARGE24),
+        kmsKey,
+        vpc,
+      });
+      const template = assertions.Template.fromStack(stack);
+      template.hasResourceProperties('AWS::RDS::DBInstance', {
+        DBInstanceClass: 'db.r5.24xlarge',
+      });
+      const annotation = assertions.Annotations.fromStack(stack);
+      annotation.hasWarning('*', assertions.Match.stringLikeRegexp('is not ARM64'));
     });
     // I don't see how to test things that are outside the "Properties" block.
     // it('removalPolicy', () => {
