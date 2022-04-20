@@ -21,19 +21,9 @@ const passwordRotationVersion = '1.1.217';
 
 export interface AuroraProps {
   /**
-   * When bootstrapping, hold off on creating the `addRotationMultiUser` and also the proxy.
-   *
-   * @default false
-   */
-  readonly bootstrap?: boolean;
-  /**
    * Would you like a database created? Otherwise you'll have to log in and create it.
    */
   readonly defaultDatabaseName?: string;
-  /**
-   * The KMS key to use... everywhere
-   */
-  readonly kmsKey: aws_kms.IKey;
   /**
    * How many instances? DevOps strongly recommends at least 3 in prod environments and only 1 in dev environments.
    * @default - passthrough
@@ -47,6 +37,10 @@ export interface AuroraProps {
    */
   readonly instanceType?: aws_ec2.InstanceType;
   /**
+   * The KMS key to use... everywhere
+   */
+  readonly kmsKey: aws_kms.IKey;
+  /**
    * @default - passthrough
    */
   readonly removalPolicy?: RemovalPolicy;
@@ -54,6 +48,18 @@ export interface AuroraProps {
    * @default Duration.days(1) This should pass through, but nope. So, we're duplicating the default.
    */
   readonly retention?: Duration;
+  /**
+   * When bootstrapping, hold off on creating the `addRotationMultiUser`.
+   *
+   * @default false
+   */
+  readonly skipAddRotationMultiUser?: boolean;
+  /**
+   * When bootstrapping, hold off on provisioning users in the database.
+   *
+   * @default false
+   */
+  readonly skipUserProvisioning?: boolean;
   /**
    * By default, we provide a proxy for non-manager users.
    * @default false
@@ -174,7 +180,7 @@ export class Aurora extends Construct {
         // minify: true,
       },
       environment: {
-        // MANAGER_SECRET_ARN: this.cluster.secret!.secretArn,
+        MANAGER_SECRET_ARN: this.cluster.secret!.secretArn,
       },
       logRetention: aws_logs.RetentionDays.ONE_WEEK,
       tracing: aws_lambda.Tracing.ACTIVE,
@@ -214,23 +220,26 @@ export class Aurora extends Construct {
         }),
       );
 
-      const userCreator = new CustomResource(this, user.addSuffix(['creator']).pascal, {
-        resourceType: 'Custom::RdsUserCreator',
-        properties: {
-          managerSecretArn: this.cluster.secret!.secretArn, // implicit dependency because of user secret
-          userSecretArn: secret.secretArn,
-          isWriter: userStr == 'writer', // good enough for now.
-        },
-        serviceToken,
-      });
-      userCreator.node.addDependency(secret);
+      let userProvisioning: CustomResource | undefined;
+      if (!props.skipUserProvisioning) {
+        userProvisioning = new CustomResource(this, user.addSuffix(['creator']).pascal, {
+          resourceType: 'Custom::RdsUserCreator',
+          properties: {
+            managerSecretArn: this.cluster.secret!.secretArn, // implicit dependency because of user secret
+            userSecretArn: secret.secretArn,
+            isWriter: userStr == 'writer', // good enough for now.
+          },
+          serviceToken,
+        });
+        userProvisioning.node.addDependency(secret);
+      }
 
-      if (!props.bootstrap) {
+      if (!props.skipAddRotationMultiUser) {
         const rotation = this.cluster.addRotationMultiUser(user.pascal, { secret });
         // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
         const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;
         sarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
-        rotation.node.addDependency(userCreator);
+        rotation.node.addDependency(userProvisioning ?? secret);
       }
       return secret;
     });

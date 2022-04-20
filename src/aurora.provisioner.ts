@@ -93,9 +93,11 @@ export async function onCreate(
   // Fetch managerSecretArn from environment variable.
   const managerSecretArn = process.env.MANAGER_SECRET_ARN;
   if (!managerSecretArn) {
+    const ReasonPrefix = 'Failed to find MANAGER_SECRET_ARN in environment variables';
+    console.log(ReasonPrefix);
     return resultFactory({
-      PhysicalResourceId: '',
-      ReasonPrefix: 'MANAGER_SECRET_ARN not set',
+      PhysicalResourceId: 'none',
+      ReasonPrefix,
       Status: CfnStatus.FAILED,
     });
   }

@@ -34,7 +34,7 @@ describe('Aurora', () => {
       const stack = new Stack(app, 'test');
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, bootstrap: true });
+      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, skipAddRotationMultiUser: true });
       const template = assertions.Template.fromStack(stack);
       ['AWS::SecretsManager::Secret'].forEach((r) => template.resourceCountIs(r, 3)); // Still have 3 users
       ['AWS::SecretsManager::RotationSchedule'].forEach((r) => template.resourceCountIs(r, 1)); // Only manager is rotated
