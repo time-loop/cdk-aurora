@@ -122,7 +122,7 @@ async function onCreate(
 
   const client = new Client({
     ...secretData.clientConfig,
-    database: dbName ?? 'postgres', // The grants below care which db we are in. But default if we just are handling users.
+    database: dbName ?? 'postgres', // The grants below care which db we are in. But defaulting to postgres is fine if we just are handling users.
   });
   await client.connect();
 
