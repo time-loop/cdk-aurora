@@ -41,7 +41,7 @@
       "type": "build"
     },
     {
-      "name": "aws-sdk-client-mock",
+      "name": "aws-sdk-mock",
       "type": "build"
     },
     {

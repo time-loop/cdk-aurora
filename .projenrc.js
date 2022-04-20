@@ -14,11 +14,11 @@ const project = new clickupCdk.ClickUpCdkConstructLibrary({
   deps: [...bundledDeps],
   devDeps: [
     ...peerDeps,
-    'aws-sdk-client-mock',
     '@time-loop/clickup-projen',
     '@types/aws-lambda',
     '@types/pg',
     '@types/pg-format',
+    'aws-sdk-mock',
   ],
   peerDeps,
 
