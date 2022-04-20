@@ -232,14 +232,12 @@ export class Aurora extends Construct {
         }),
       );
 
-      let rdsUser: CustomResource | undefined;
       if (!props.skipUserProvisioning) {
-        rdsUser = rdsUserProvisioner(user, {
+        rdsUserProvisioner(user, {
           userSecretArn: secret.secretArn,
           dbName: props.defaultDatabaseName,
           isWriter: userStr == 'writer', // good enough for now.
         });
-        rdsUser.node.addDependency(secret);
       }
 
       if (!props.skipAddRotationMultiUser) {
@@ -247,7 +245,6 @@ export class Aurora extends Construct {
         // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
         const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;
         sarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
-        rotation.node.addDependency(rdsUser ?? secret);
       }
       return secret;
     });
