@@ -846,6 +846,11 @@
   resolved "https://registry.yarnpkg.com/@types/normalize-package-data/-/normalize-package-data-2.4.1.tgz#d3357479a0fdfdd5907fe67e17e0a85c906e1301"
   integrity sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==
 
+"@types/pg-format@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@types/pg-format/-/pg-format-1.0.2.tgz#3c63fcb3723a6888c8fad740866b1061634d037e"
+  integrity sha512-D3MEO6u3BObw3G4Xewjdx05MF5v/fiog78CedtrXe8BhONM8GvUz2dPfLWtI0BPRBoRd6anPHXe+sbrPReZouQ==
+
 "@types/pg@^8.6.5":
   version "8.6.5"
   resolved "https://registry.yarnpkg.com/@types/pg/-/pg-8.6.5.tgz#2dce9cb468a6a5e0f1296a59aea3ac75dd27b702"

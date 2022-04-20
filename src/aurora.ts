@@ -179,13 +179,15 @@ export class Aurora extends Construct {
     const onEventHandler = new aws_lambda_nodejs.NodejsFunction(this, 'provisioner', {
       bundling: {
         externalModules: ['aws-lambda', 'aws-sdk'], // Lambda is just types. SDK is explicitly provided.
-        // minify: true,
+        minify: true,
+        nodeModules: ['pg', 'pg-format'],
       },
       environment: {
         MANAGER_SECRET_ARN: this.cluster.secret!.secretArn,
       },
       logRetention: aws_logs.RetentionDays.ONE_WEEK,
       tracing: aws_lambda.Tracing.ACTIVE,
+      vpc: props.vpc,
     });
     [
       new aws_iam.PolicyStatement({
@@ -197,6 +199,7 @@ export class Aurora extends Construct {
         resources: [this.kmsKey.keyArn],
       }),
     ].forEach((s) => onEventHandler.addToRolePolicy(s));
+    this.cluster.connections.allowDefaultPortFrom(onEventHandler, 'User provisioning lambda');
 
     const provider = new custom_resources.Provider(this, 'provider', {
       onEventHandler,
@@ -233,6 +236,7 @@ export class Aurora extends Construct {
       if (!props.skipUserProvisioning) {
         rdsUser = rdsUserProvisioner(user, {
           userSecretArn: secret.secretArn,
+          dbName: props.defaultDatabaseName,
           isWriter: userStr == 'writer', // good enough for now.
         });
         rdsUser.node.addDependency(secret);

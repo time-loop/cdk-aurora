@@ -1,7 +1,8 @@
 import * as awsLambda from 'aws-lambda';
 import * as _awsSdk from 'aws-sdk';
 import * as awsXray from 'aws-xray-sdk-core';
-import pg;
+import { Client } from 'pg';
+import format = require('pg-format');
 const awsSdk = awsXray.captureAWS(_awsSdk);
 
 export interface RdsUserProvisionerProps {
@@ -9,6 +10,10 @@ export interface RdsUserProvisionerProps {
    * The secretArn for the user to be created / granted.
    */
   readonly userSecretArn: string;
+  /**
+   * The database to be granted
+   */
+  readonly dbName?: string;
   /**
    * Should this user be granted "writer" defaults or "reader" defaults?
    * @default false
@@ -89,6 +94,8 @@ export async function onCreate(
   };
   console.log(`onCreate event: ${JSON.stringify(event)}`);
   const userSecretArn = event.ResourceProperties.userSecretArn;
+  const dbName = event.ResourceProperties.dbName;
+  const isWriter = event.ResourceProperties.isWriter === 'true';
 
   const secretsManager = new awsSdk.SecretsManager();
 
@@ -147,34 +154,85 @@ export async function onCreate(
       });
     }
   }
+
+  const conInfo = {
+    host: managerSecret.host,
+    port: managerSecret.port,
+    database: dbName ?? 'postgres', // The grants below care which db we are in. But default if we just are handling users.
+    user: managerSecret.username,
+  };
+  console.log(`Connecting to ${JSON.stringify(conInfo)}`);
+  const client = new Client({
+    ...conInfo,
+    password: managerSecret.password,
+  });
+  await client.connect();
+
+  // Does the user already exist? If not, create them.
+  try {
+    const res = await client.query(`SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = $1`, [username]);
+    if (res.rowCount > 0) {
+      console.log(`User ${username} already exists. Skipping creation.`);
+    } else {
+      console.log(`Creating user ${username}`);
+      await client.query(`CREATE USER "${username}" NOINHERIT PASSWORD NULL`);
+    }
+  } catch (err) {
+    console.log(`Failed creating ${username}: ${JSON.stringify(err)}`);
+    return resultFactory({
+      PhysicalResourceId: username,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
+  // Bonk password on the user.
+  try {
+    const alterPassword = format('ALTER USER %I WITH ENCRYPTED PASSWORD %L', username, userSecret.password);
+    console.log(`Updating password for ${username} from secret`);
+    await client.query(alterPassword);
+  } catch (err) {
+    console.log(`Failed updating password for ${username}: ${JSON.stringify(err)}`);
+    return resultFactory({
+      PhysicalResourceId: username,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
+  // If we didn't get a dbName, we're done.
+  if (!dbName) {
+    console.log(`No dbName specified. Skipping further grants.`);
+    return resultFactory({
+      PhysicalResourceId: username,
+      Status: CfnStatus.SUCCESS,
+    });
+  }
+
+  try {
+    [
+      format('GRANT CONNECT ON DATABASE %I TO %I', dbName, username), // Usage on Database
+      format('GRANT USAGE ON SCHEMA %I TO %I', 'public', username), // Usage on Schema
+      format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', username), // Defaults on sequences
+      format(
+        'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
+        isWriter ? ', INSERT, UPDATE, DELETE' : '',
+        username,
+      ), // Defaults on tables
+    ].forEach(async (sql) => {
+      console.log(`Running: ${sql}`);
+      await client.query(sql);
+    });
+  } catch (err) {
+    console.log(`Failed for ${username}: ${JSON.stringify(err)}`);
+    return resultFactory({
+      PhysicalResourceId: username,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
   return resultFactory({
     PhysicalResourceId: username,
     Status: CfnStatus.SUCCESS,
   });
-
-  // const rds = new awsSdk.RDS({ region: 'us-east-1' });
-  // const dbCluster = await rds.describeDBClusters({ DBClusterIdentifier: managerSecretJson.dbClusterIdentifier }).promise();
-  // const dbClusterEndpoint = dbCluster.DBClusters[0].Endpoint;
-  // const dbClusterEndpointAddress = dbClusterEndpoint.Address;
-  // const dbClusterEndpointPort = dbClusterEndpoint.Port;
-
-  // const db = new awsSdk.RDSDataService({
-  //   endpoint: `${dbClusterEndpointAddress}:${dbClusterEndpointPort}`,
-  // });
-
-  //   const dbSecretArns = await Promise.all(userSecretArns.map(async (userSecretArn) => {
-  //     const userSecret = await awsSdk.SecretsManager.getSecretValue({ SecretId: userSecretArn }).promise();
-  //     const userSecretJson = JSON.parse(userSecret.SecretString);
-  //     const userSecretArn = userSecretJson.secretArn;
-  //     const userName = userSecretJson.userName;
-  //     const userPassword = userSecretJson.userPassword;
-
-  //     const dbSecretArn = await db.executeStatement({
-  //       resourceArn: managerSecretArn,
-  //       sql: `
-  //         CREATE USER '${userName}' WITH PASSWORD '${userPassword}';
-  //         GRANT ALL PR`
-  // ):
 }
 
 /**
