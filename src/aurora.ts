@@ -233,11 +233,12 @@ export class Aurora extends Construct {
       );
 
       if (!props.skipUserProvisioning) {
-        rdsUserProvisioner(user, {
+        const rdsUser = rdsUserProvisioner(user, {
           userSecretArn: secret.secretArn,
           dbName: props.defaultDatabaseName,
           isWriter: userStr == 'writer', // good enough for now.
         });
+        rdsUser.node.addDependency(this.cluster);
       }
 
       if (!props.skipAddRotationMultiUser) {
