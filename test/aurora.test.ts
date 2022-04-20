@@ -23,6 +23,14 @@ describe('Aurora', () => {
         BackupRetentionPeriod: 1,
       });
     });
+    it('provisions reader and writer', () => {
+      template.hasResourceProperties('Custom::RdsUser', {
+        isWriter: false,
+      });
+      template.hasResourceProperties('Custom::RdsUser', {
+        isWriter: true,
+      });
+    });
 
     // it('outputs ProxyEndpoint', () => {
     //   template.hasOutput('ProxyEndpoint', {});
@@ -38,6 +46,9 @@ describe('Aurora', () => {
       const template = assertions.Template.fromStack(stack);
       template.hasResourceProperties('AWS::RDS::DBCluster', {
         DatabaseName: 'foo',
+      });
+      template.hasResourceProperties('Custom::RdsUser', {
+        dbName: 'foo',
       });
     });
     it('instances', () => {
@@ -114,6 +125,15 @@ describe('Aurora', () => {
       new Aurora(stack, new Namer(['test']), { kmsKey, vpc, skipProxy: true });
       const template = assertions.Template.fromStack(stack);
       template.resourceCountIs('AWS::RDS::DBProxy', 0);
+    });
+    it('skipUserProvisioning', () => {
+      const app = new App();
+      const stack = new Stack(app, 'test');
+      const kmsKey = new aws_kms.Key(stack, 'Key');
+      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
+      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, skipUserProvisioning: true });
+      const template = assertions.Template.fromStack(stack);
+      template.resourceCountIs('Custom::RdsUser', 0);
     });
   });
 });
