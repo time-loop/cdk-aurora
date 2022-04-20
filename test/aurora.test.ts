@@ -14,7 +14,7 @@ describe('Aurora', () => {
     it('creates resources', () => {
       ['AWS::RDS::DBCluster', 'AWS::RDS::DBProxy'].forEach((r) => template.resourceCountIs(r, 1));
       ['AWS::RDS::DBInstance'].forEach((r) => template.resourceCountIs(r, 2));
-      ['AWS::SecretsManager::RotationSchedule', 'AWS::SecretsManager::Secret'].forEach((r) =>
+      ['AWS::Lambda::Function', 'AWS::SecretsManager::RotationSchedule', 'AWS::SecretsManager::Secret'].forEach((r) =>
         template.resourceCountIs(r, 3),
       );
     });
