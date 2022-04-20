@@ -1,7 +1,7 @@
 import * as awsLambda from 'aws-lambda';
 import * as _awsSdk from 'aws-sdk';
 import * as awsXray from 'aws-xray-sdk-core';
-import { Client } from 'pg';
+import { Client, ClientConfig } from 'pg';
 import format = require('pg-format');
 const awsSdk = awsXray.captureAWS(_awsSdk);
 
@@ -78,7 +78,7 @@ interface CreateResultProps {
   Status: CfnStatus;
 }
 
-export async function onCreate(
+async function onCreate(
   event: awsLambda.CloudFormationCustomResourceEvent,
   context: awsLambda.Context,
   _callback: awsLambda.Callback,
@@ -97,8 +97,6 @@ export async function onCreate(
   const dbName = event.ResourceProperties.dbName;
   const isWriter = event.ResourceProperties.isWriter === 'true';
 
-  const secretsManager = new awsSdk.SecretsManager();
-
   // Fetch managerSecretArn from environment variable.
   const managerSecretArn = process.env.MANAGER_SECRET_ARN;
   if (!managerSecretArn) {
@@ -110,90 +108,30 @@ export async function onCreate(
       Status: CfnStatus.FAILED,
     });
   }
-  const managerSecretRaw = await secretsManager.getSecretValue({ SecretId: managerSecretArn }).promise();
-  const managerSecret = JSON.parse(managerSecretRaw.SecretString!);
 
-  const userSecretRaw = await secretsManager.getSecretValue({ SecretId: userSecretArn }).promise();
-  const userSecret = JSON.parse(userSecretRaw.SecretString!);
-
-  // Pull the host and engine information from the managerSecret and push it into the userSecret.
-  var updatedUserSecret = false;
-  if (!userSecret.hasOwnProperty('host')) {
-    userSecret.host = managerSecret.host;
-    updatedUserSecret = true;
-  }
-  if (!userSecret.host) {
-    userSecret.host = managerSecret.host;
-    updatedUserSecret = true;
-  }
-  if (!userSecret.hasOwnProperty('engine')) {
-    userSecret.engine = managerSecret.engine;
-    updatedUserSecret = true;
-  }
-  if (!userSecret.engine) {
-    userSecret.engine = managerSecret.engine;
-    updatedUserSecret = true;
-  }
-
-  const username = userSecret.username;
-
-  // push secret, if updated
-  if (!updatedUserSecret) {
-    console.log(`User ${JSON.stringify(username)} secret already has host and engine information. Skipping update.`);
-  } else {
-    console.log(`Updating user secret for ${JSON.stringify(username)}`);
-    const r = await secretsManager
-      .putSecretValue({ SecretId: userSecretArn, SecretString: JSON.stringify(userSecret) })
-      .promise();
-    console.log(`putSecretValue ${userSecretArn} response: ${JSON.stringify(r)}`);
-    if (r.$response.error) {
-      return resultFactory({
-        PhysicalResourceId: username,
-        Status: CfnStatus.FAILED,
-        ReasonPrefix: `Failed to update user secret: ${JSON.stringify(r.$response.error)}`,
-      });
-    }
-  }
-
-  const conInfo = {
-    host: managerSecret.host,
-    port: managerSecret.port,
-    database: dbName ?? 'postgres', // The grants below care which db we are in. But default if we just are handling users.
-    user: managerSecret.username,
-  };
-  console.log(`Connecting to ${JSON.stringify(conInfo)}`);
-  const client = new Client({
-    ...conInfo,
-    password: managerSecret.password,
-  });
-  await client.connect();
-
-  // Does the user already exist? If not, create them.
+  let secretData;
   try {
-    const res = await client.query(`SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = $1`, [username]);
-    if (res.rowCount > 0) {
-      console.log(`User ${username} already exists. Skipping creation.`);
-    } else {
-      console.log(`Creating user ${username}`);
-      await client.query(`CREATE USER "${username}" NOINHERIT PASSWORD NULL`);
-    }
+    secretData = await fetchAndConformSecrets(managerSecretArn, userSecretArn);
   } catch (err) {
-    console.log(`Failed creating ${username}: ${JSON.stringify(err)}`);
     return resultFactory({
-      PhysicalResourceId: username,
+      PhysicalResourceId: 'none',
       Status: CfnStatus.FAILED,
+      ReasonPrefix: `Secrets issue: ${JSON.stringify(err)}`,
     });
   }
 
-  // Bonk password on the user.
+  const client = new Client({
+    ...secretData.clientConfig,
+    database: dbName ?? 'postgres', // The grants below care which db we are in. But default if we just are handling users.
+  });
+  await client.connect();
+
   try {
-    const alterPassword = format('ALTER USER %I WITH ENCRYPTED PASSWORD %L', username, userSecret.password);
-    console.log(`Updating password for ${username} from secret`);
-    await client.query(alterPassword);
+    await createUser(client, secretData.username);
+    await conformPassword(client, secretData.username, secretData.password);
   } catch (err) {
-    console.log(`Failed updating password for ${username}: ${JSON.stringify(err)}`);
     return resultFactory({
-      PhysicalResourceId: username,
+      PhysicalResourceId: secretData.username,
       Status: CfnStatus.FAILED,
     });
   }
@@ -202,35 +140,22 @@ export async function onCreate(
   if (!dbName) {
     console.log(`No dbName specified. Skipping further grants.`);
     return resultFactory({
-      PhysicalResourceId: username,
+      PhysicalResourceId: secretData.username,
       Status: CfnStatus.SUCCESS,
     });
   }
 
   try {
-    [
-      format('GRANT CONNECT ON DATABASE %I TO %I', dbName, username), // Usage on Database
-      format('GRANT USAGE ON SCHEMA %I TO %I', 'public', username), // Usage on Schema
-      format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', username), // Defaults on sequences
-      format(
-        'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
-        isWriter ? ', INSERT, UPDATE, DELETE' : '',
-        username,
-      ), // Defaults on tables
-    ].forEach(async (sql) => {
-      console.log(`Running: ${sql}`);
-      await client.query(sql);
-    });
+    await grantPrivileges(client, secretData.username, dbName, isWriter);
   } catch (err) {
-    console.log(`Failed for ${username}: ${JSON.stringify(err)}`);
     return resultFactory({
-      PhysicalResourceId: username,
+      PhysicalResourceId: secretData.username,
       Status: CfnStatus.FAILED,
     });
   }
 
   return resultFactory({
-    PhysicalResourceId: username,
+    PhysicalResourceId: secretData.username,
     Status: CfnStatus.SUCCESS,
   });
 }
@@ -242,7 +167,7 @@ export async function onCreate(
  * @param _callback
  * @returns
  */
-export const onUpdate = async (
+const onUpdate = async (
   event: awsLambda.CloudFormationCustomResourceUpdateEvent,
   context: awsLambda.Context,
   _callback: awsLambda.Callback,
@@ -265,7 +190,7 @@ export const onUpdate = async (
  * @param _callback
  * @returns
  */
-export const onDelete = async (
+const onDelete = async (
   event: awsLambda.CloudFormationCustomResourceDeleteEvent,
   context: awsLambda.Context,
   _callback: awsLambda.Callback,
@@ -280,3 +205,150 @@ export const onDelete = async (
     Status: CfnStatus.SUCCESS,
   };
 };
+
+export interface SecretsResult {
+  /**
+   * DB Connection information
+   */
+  clientConfig: ClientConfig;
+  /**
+   * The username to be provisioned
+   */
+  username: string;
+  /**
+   * The password to be provisioned
+   */
+  password: string;
+}
+
+export async function fetchAndConformSecrets(managerSecretArn: string, userSecretArn: string): Promise<SecretsResult> {
+  const secretsManager = new awsSdk.SecretsManager();
+
+  const managerSecretRaw = await secretsManager.getSecretValue({ SecretId: managerSecretArn }).promise();
+  const managerSecret = JSON.parse(managerSecretRaw.SecretString!);
+
+  const userSecretRaw = await secretsManager.getSecretValue({ SecretId: userSecretArn }).promise();
+  const userSecret = JSON.parse(userSecretRaw.SecretString!);
+
+  // Pull the host and engine information from the managerSecret and push it into the userSecret.
+  var updatedUserSecret = false;
+  if (!userSecret.hasOwnProperty('host')) {
+    console.log('Updating user secret with host from manager secret');
+    userSecret.host = managerSecret.host;
+    updatedUserSecret = true;
+  }
+  if (!userSecret.host) {
+    console.log('Updating user secret with host from manager secret');
+    userSecret.host = managerSecret.host;
+    updatedUserSecret = true;
+  }
+  if (!userSecret.hasOwnProperty('engine')) {
+    console.log('Updating user secret with engine from manager secret');
+    userSecret.engine = managerSecret.engine;
+    updatedUserSecret = true;
+  }
+  if (!userSecret.engine) {
+    console.log('Updating user secret with engine from manager secret');
+    userSecret.engine = managerSecret.engine;
+    updatedUserSecret = true;
+  }
+
+  // push secret, if updated
+  if (!updatedUserSecret) {
+    console.log(
+      `User ${JSON.stringify(userSecret.username)} secret already has host and engine information. Nothing to update.`,
+    );
+  } else {
+    console.log(`Updating user secret for ${JSON.stringify(userSecret.username)}.`);
+    const r = await secretsManager
+      .putSecretValue({ SecretId: userSecretArn, SecretString: JSON.stringify(userSecret) })
+      .promise();
+    console.log(`putSecretValue ${userSecretArn} response: ${JSON.stringify(r)}`);
+    if (r.$response.error) {
+      throw r.$response.error;
+    }
+  }
+
+  return {
+    clientConfig: {
+      host: managerSecret.host,
+      port: managerSecret.port,
+      user: managerSecret.username,
+      password: managerSecret.password,
+    },
+    username: userSecret.username,
+    password: userSecret.password,
+  };
+}
+
+/**
+ * Does the user already exist? If not, create them.
+ * @param client
+ * @param username
+ * @returns -
+ */
+export async function createUser(client: Client, username: string): Promise<void> {
+  try {
+    const res = await client.query(`SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = $1`, [username]);
+    if (res.rowCount > 0) {
+      console.log(`User ${username} already exists. Skipping creation.`);
+    } else {
+      const sql = format('CREATE USER %I NOINHERIT PASSWORD NULL', username);
+      console.log(`Running: ${sql}`);
+      await client.query(sql);
+    }
+  } catch (err) {
+    console.log(`Failed creating ${username}: ${JSON.stringify(err)}`);
+    throw err;
+  }
+}
+
+/**
+ * Bonk password on the user.
+ * @param client
+ * @param username
+ * @param password
+ */
+export async function conformPassword(client: Client, username: string, password: string): Promise<void> {
+  try {
+    const alterPassword = format('ALTER USER %I WITH ENCRYPTED PASSWORD %L', username, password);
+    console.log(`Updating password for ${username} from secret`);
+    await client.query(alterPassword);
+  } catch (err) {
+    console.log(`Failed updating password for ${username}: ${JSON.stringify(err)}`);
+    throw err;
+  }
+}
+
+/**
+ * Grant privileges to the user.
+ * @param client
+ * @param dbName
+ * @param username
+ * @param isWriter
+ */
+export async function grantPrivileges(
+  client: Client,
+  dbName: string,
+  username: string,
+  isWriter: boolean,
+): Promise<void> {
+  try {
+    [
+      format('GRANT CONNECT ON DATABASE %I TO %I', dbName, username), // Usage on Database
+      format('GRANT USAGE ON SCHEMA %I TO %I', 'public', username), // Usage on Schema
+      format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', username), // Defaults on sequences
+      format(
+        'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
+        isWriter ? ', INSERT, UPDATE, DELETE' : '',
+        username,
+      ), // Defaults on tables
+    ].forEach(async (sql) => {
+      console.log(`Running: ${sql}`);
+      await client.query(sql);
+    });
+  } catch (err) {
+    console.log(`Failed granting privileges to ${username}: ${JSON.stringify(err)}`);
+    throw err;
+  }
+}
