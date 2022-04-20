@@ -1,6 +1,7 @@
 import * as awsLambda from 'aws-lambda';
 import * as _awsSdk from 'aws-sdk';
 import * as awsXray from 'aws-xray-sdk-core';
+import pg;
 const awsSdk = awsXray.captureAWS(_awsSdk);
 
 export interface RdsUserProvisionerProps {
@@ -87,6 +88,7 @@ export async function onCreate(
     };
   };
   console.log(`onCreate event: ${JSON.stringify(event)}`);
+  const userSecretArn = event.ResourceProperties.userSecretArn;
 
   const secretsManager = new awsSdk.SecretsManager();
 
@@ -101,43 +103,42 @@ export async function onCreate(
       Status: CfnStatus.FAILED,
     });
   }
-  const managerSecret = await secretsManager.getSecretValue({ SecretId: managerSecretArn }).promise();
-  const managerSecretJson = JSON.parse(managerSecret.SecretString!);
+  const managerSecretRaw = await secretsManager.getSecretValue({ SecretId: managerSecretArn }).promise();
+  const managerSecret = JSON.parse(managerSecretRaw.SecretString!);
 
-  const props: RdsUserProvisionerProps = JSON.parse(event.ResourceProperties.UserProps);
-  const userSecret = await secretsManager.getSecretValue({ SecretId: props.userSecretArn }).promise();
-  const userSecretJson = JSON.parse(userSecret.SecretString!);
+  const userSecretRaw = await secretsManager.getSecretValue({ SecretId: userSecretArn }).promise();
+  const userSecret = JSON.parse(userSecretRaw.SecretString!);
 
   // Pull the host and engine information from the managerSecret and push it into the userSecret.
   var updatedUserSecret = false;
-  if (!userSecretJson.hasOwnProperty('host')) {
-    userSecretJson.host = managerSecretJson.host;
+  if (!userSecret.hasOwnProperty('host')) {
+    userSecret.host = managerSecret.host;
     updatedUserSecret = true;
   }
-  if (!userSecretJson.host) {
-    userSecretJson.host = managerSecretJson.host;
+  if (!userSecret.host) {
+    userSecret.host = managerSecret.host;
     updatedUserSecret = true;
   }
-  if (!userSecretJson.hasOwnProperty('engine')) {
-    userSecretJson.engine = managerSecretJson.engine;
+  if (!userSecret.hasOwnProperty('engine')) {
+    userSecret.engine = managerSecret.engine;
     updatedUserSecret = true;
   }
-  if (!userSecretJson.engine) {
-    userSecretJson.engine = managerSecretJson.engine;
+  if (!userSecret.engine) {
+    userSecret.engine = managerSecret.engine;
     updatedUserSecret = true;
   }
 
-  const username = userSecretJson.username;
+  const username = userSecret.username;
 
   // push secret, if updated
   if (!updatedUserSecret) {
-    console.log(`User secret ${username} already has host and engine information. Skipping update.`);
+    console.log(`User ${JSON.stringify(username)} secret already has host and engine information. Skipping update.`);
   } else {
-    console.log(`Updating user secret for ${userSecretJson.username}`);
+    console.log(`Updating user secret for ${JSON.stringify(username)}`);
     const r = await secretsManager
-      .putSecretValue({ SecretId: props.userSecretArn, SecretString: JSON.stringify(userSecretJson) })
+      .putSecretValue({ SecretId: userSecretArn, SecretString: JSON.stringify(userSecret) })
       .promise();
-    console.log(`putSecretValue ${props.userSecretArn} response: ${JSON.stringify(r)}`);
+    console.log(`putSecretValue ${userSecretArn} response: ${JSON.stringify(r)}`);
     if (r.$response.error) {
       return resultFactory({
         PhysicalResourceId: username,

@@ -17,6 +17,8 @@ import {
 import { Construct } from 'constructs';
 import { Namer } from 'multi-convention-namer';
 
+import { RdsUserProvisionerProps } from './aurora.provisioner';
+
 const passwordRotationVersion = '1.1.217';
 
 export interface AuroraProps {
@@ -199,8 +201,13 @@ export class Aurora extends Construct {
     const provider = new custom_resources.Provider(this, 'provider', {
       onEventHandler,
     });
-    const serviceToken = provider.serviceToken;
-    new CfnOutput(this, 'ProvisionerServiceToken', { value: serviceToken }); // Temp for dev
+
+    const rdsUserProvisioner = (id: Namer, properties: RdsUserProvisionerProps) =>
+      new CustomResource(this, id.addSuffix(['creator']).pascal, {
+        resourceType: 'Custom::RdsUserProvisioner',
+        properties,
+        serviceToken: provider.serviceToken,
+      });
 
     // User management
     this.secrets = ['reader', 'writer'].map((userStr) => {
@@ -215,23 +222,20 @@ export class Aurora extends Construct {
 
       onEventHandler.addToRolePolicy(
         new aws_iam.PolicyStatement({
-          actions: ['DescribeSecret', 'GetSecretValue', 'ListSecretVersionIds'].map((s) => `secretsmanager:${s}`),
+          actions: ['DescribeSecret', 'GetSecretValue', 'ListSecretVersionIds', 'PutSecretValue'].map(
+            (s) => `secretsmanager:${s}`,
+          ),
           resources: [secret.secretArn],
         }),
       );
 
-      let userProvisioning: CustomResource | undefined;
+      let rdsUser: CustomResource | undefined;
       if (!props.skipUserProvisioning) {
-        userProvisioning = new CustomResource(this, user.addSuffix(['creator']).pascal, {
-          resourceType: 'Custom::RdsUserCreator',
-          properties: {
-            managerSecretArn: this.cluster.secret!.secretArn, // implicit dependency because of user secret
-            userSecretArn: secret.secretArn,
-            isWriter: userStr == 'writer', // good enough for now.
-          },
-          serviceToken,
+        rdsUser = rdsUserProvisioner(user, {
+          userSecretArn: secret.secretArn,
+          isWriter: userStr == 'writer', // good enough for now.
         });
-        userProvisioning.node.addDependency(secret);
+        rdsUser.node.addDependency(secret);
       }
 
       if (!props.skipAddRotationMultiUser) {
@@ -239,7 +243,7 @@ export class Aurora extends Construct {
         // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
         const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;
         sarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
-        rotation.node.addDependency(userProvisioning ?? secret);
+        rotation.node.addDependency(rdsUser ?? secret);
       }
       return secret;
     });
