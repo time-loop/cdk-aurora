@@ -12,7 +12,14 @@ const project = new clickupCdk.ClickUpCdkConstructLibrary({
 
   bundledDeps,
   deps: [...bundledDeps],
-  devDeps: [...peerDeps, '@time-loop/clickup-projen', '@types/aws-lambda', '@types/pg', '@types/pg-format'],
+  devDeps: [
+    ...peerDeps,
+    'aws-sdk-client-mock',
+    '@time-loop/clickup-projen',
+    '@types/aws-lambda',
+    '@types/pg',
+    '@types/pg-format',
+  ],
   peerDeps,
 
   repositoryUrl: '', // leverage default
