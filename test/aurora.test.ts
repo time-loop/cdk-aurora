@@ -29,16 +29,6 @@ describe('Aurora', () => {
     // });
   });
   describe('options', () => {
-    it('bootstrap', () => {
-      const app = new App();
-      const stack = new Stack(app, 'test');
-      const kmsKey = new aws_kms.Key(stack, 'Key');
-      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, skipAddRotationMultiUser: true });
-      const template = assertions.Template.fromStack(stack);
-      ['AWS::SecretsManager::Secret'].forEach((r) => template.resourceCountIs(r, 3)); // Still have 3 users
-      ['AWS::SecretsManager::RotationSchedule'].forEach((r) => template.resourceCountIs(r, 1)); // Only manager is rotated
-    });
     it('defaultDatabaseName', () => {
       const app = new App();
       const stack = new Stack(app, 'test');
@@ -105,6 +95,16 @@ describe('Aurora', () => {
       template.hasResourceProperties('AWS::RDS::DBCluster', {
         BackupRetentionPeriod: 30,
       });
+    });
+    it('skipAddRotationMultiUser', () => {
+      const app = new App();
+      const stack = new Stack(app, 'test');
+      const kmsKey = new aws_kms.Key(stack, 'Key');
+      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
+      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, skipAddRotationMultiUser: true });
+      const template = assertions.Template.fromStack(stack);
+      ['AWS::SecretsManager::Secret'].forEach((r) => template.resourceCountIs(r, 3)); // Still have 3 users
+      ['AWS::SecretsManager::RotationSchedule'].forEach((r) => template.resourceCountIs(r, 1)); // Only manager is rotated
     });
     it('skipProxy', () => {
       const app = new App();
