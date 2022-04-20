@@ -6,7 +6,7 @@ const peerDeps = ['constructs@^10.0.5', 'multi-convention-namer@^0.1.11'];
 const project = new clickupCdk.ClickUpCdkConstructLibrary({
   name: '@time-loop/cdk-aurora',
 
-  cdkVersion: '2.20.0',
+  cdkVersion: '2.13.0',
   defaultReleaseBranch: 'main',
   licensed: true,
 

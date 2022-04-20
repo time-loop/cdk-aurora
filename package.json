@@ -44,8 +44,8 @@
     "@types/pg-format": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5",
     "@typescript-eslint/parser": "^5",
-    "aws-cdk-lib": "2.20.0",
-    "constructs": "10.0.119",
+    "aws-cdk-lib": "2.13.0",
+    "constructs": "10.0.5",
     "esbuild": "^0.14.36",
     "eslint": "^8",
     "eslint-config-prettier": "^8.5.0",
@@ -70,8 +70,8 @@
     "typescript": "^4.6.3"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.20.0",
-    "constructs": "^10.0.119",
+    "aws-cdk-lib": "^2.13.0",
+    "constructs": "^10.0.5",
     "multi-convention-namer": "^0.1.11"
   },
   "dependencies": {

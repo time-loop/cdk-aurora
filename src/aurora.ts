@@ -122,7 +122,6 @@ export class Aurora extends Construct {
   readonly secrets: aws_rds.DatabaseSecret[];
 
   constructor(scope: Construct, id: Namer, props: AuroraProps) {
-    console.log('-- cdk-aurora ----------------------------------------------------');
     super(scope, id.pascal);
 
     const encryptionKey = (this.kmsKey = props.kmsKey);
