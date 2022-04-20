@@ -201,6 +201,7 @@ export class Aurora extends Construct {
     this.cluster.connections.allowDefaultPortFrom(onEventHandler, 'User provisioning lambda');
 
     const provider = new custom_resources.Provider(this, 'provider', {
+      logRetention: aws_logs.RetentionDays.ONE_WEEK,
       onEventHandler,
     });
 
