@@ -188,6 +188,7 @@ export const onUpdate = async (
   context: awsLambda.Context,
   _callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> => {
+  console.log(`onUpdate event: ${JSON.stringify(event)}`);
   return {
     LogicalResourceId: event.LogicalResourceId,
     PhysicalResourceId: event.PhysicalResourceId,
@@ -210,6 +211,7 @@ export const onDelete = async (
   context: awsLambda.Context,
   _callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> => {
+  console.log(`onDelete event: ${JSON.stringify(event)}`);
   return {
     LogicalResourceId: event.LogicalResourceId,
     PhysicalResourceId: event.PhysicalResourceId,
