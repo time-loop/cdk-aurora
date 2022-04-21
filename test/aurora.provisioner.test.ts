@@ -177,11 +177,9 @@ describe('fetchAndConformSecrets', () => {
       }),
     });
     putSecretValueStub.onFirstCall().resolves({ $response: { error: new Error('whoopsie') } });
-
     await expect(m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn')).rejects.toThrowError(
       'whoopsie',
     );
-
     expect(putSecretValueStub.callCount).toEqual(1);
     expect(putSecretValueStub.firstCall.args[0]).toEqual({
       SecretId: 'fakeUserSecretArn',
@@ -256,6 +254,7 @@ describe('postgres', () => {
         'ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO "fakeUsername"',
       );
     });
+
     it('grants for writers', async () => {
       [...Array(4).keys()].forEach((n) => postgresStub.onCall(n).resolves({ rowCount: 0 }));
       await m.grantPrivileges(client, 'fakeDbName', 'fakeUsername', true);
@@ -272,10 +271,10 @@ describe('postgres', () => {
 
     // it('logs on error', async () => {
     //   postgresStub.onFirstCall().rejects(new Error('whoopsie'));
-    //   await expect(m.grantPrivileges(client, 'fakeDbName', 'fakeUsername', true)).rejects.toThrowError('whoopsie');
+    //   await expect(m.grantPrivileges(client, 'fakeDbName', 'fakePassword', true)).rejects.toThrowError('whoopsie');
     // });
 
-    it.todo('wtf');
+    it.todo('figure out why "logs on error" fails');
   });
 });
 

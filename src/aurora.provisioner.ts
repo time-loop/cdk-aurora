@@ -340,9 +340,9 @@ export class Methods {
   /**
    * Grant privileges to the user.
    * @param client
-   * @param dbName
+   * @param dbName what database to grant privileges to
    * @param username
-   * @param isWriter
+   * @param isWriter whether or not to grant write privileges
    */
   public async grantPrivileges(client: Client, dbName: string, username: string, isWriter: boolean): Promise<void> {
     try {
