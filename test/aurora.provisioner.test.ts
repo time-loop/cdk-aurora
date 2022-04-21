@@ -4,7 +4,7 @@ import sinon from 'sinon';
 
 import {
   createUser,
-  // conformPassword,
+  conformPassword,
   fetchAndConformSecrets,
   //  grantPrivileges
 } from '../src/aurora.provisioner';
@@ -198,44 +198,57 @@ describe('fetchAndConformSecrets', () => {
   });
 });
 
-describe('createUser', () => {
+describe('postgres', () => {
   const postgresStub = sinon.stub(Client.prototype, 'query');
   const client = new Client();
   beforeEach(() => {
     postgresStub.resetHistory();
   });
 
-  it('skips if user already exists', async () => {
-    postgresStub.onFirstCall().resolves({ rowCount: 1 }); // 1 because user is found
-    await createUser(client, 'fakeUsername');
-    expect(postgresStub.callCount).toEqual(1); // only the check query, no query to create user
-    expect(postgresStub.firstCall.args[1]).toEqual(['fakeUsername']);
+  describe('createUser', () => {
+    it('skips if user already exists', async () => {
+      postgresStub.onFirstCall().resolves({ rowCount: 1 }); // 1 because user is found
+      await createUser(client, 'fakeUsername');
+      expect(postgresStub.callCount).toEqual(1); // only the check query, no query to create user
+      expect(postgresStub.firstCall.args[1]).toEqual(['fakeUsername']);
+    });
+
+    it('creates user if user does not exist', async () => {
+      postgresStub.onFirstCall().resolves({ rowCount: 0 }); // 0 because user is not found
+      postgresStub.onSecondCall().resolves({ rowCount: 0 });
+      await createUser(client, 'fakeUsername');
+      expect(postgresStub.callCount).toEqual(2); // check query and create user query
+      expect(postgresStub.firstCall.args[1]).toEqual(['fakeUsername']);
+      expect(postgresStub.secondCall.args[0]).toEqual('CREATE USER "fakeUsername" NOINHERIT PASSWORD NULL');
+    });
+
+    it('logs on error', async () => {
+      postgresStub.onFirstCall().rejects(new Error('whoopsie'));
+      await expect(createUser(client, 'fakeUsername')).rejects.toThrowError('whoopsie');
+    });
   });
 
-  it('creates user if user does not exist', async () => {
-    postgresStub.onFirstCall().resolves({ rowCount: 0 }); // 0 because user is not found
-    postgresStub.onSecondCall().resolves({ rowCount: 0 });
-    await createUser(client, 'fakeUsername');
-    expect(postgresStub.callCount).toEqual(2); // check query and create user query
-    expect(postgresStub.firstCall.args[1]).toEqual(['fakeUsername']);
-    expect(postgresStub.secondCall.args[0]).toEqual('CREATE USER "fakeUsername" NOINHERIT PASSWORD NULL');
+  describe('conformPassword', () => {
+    it('conforms password', async () => {
+      postgresStub.onFirstCall().resolves({ rowCount: 0 });
+      await conformPassword(client, 'fakeUsername', 'fakePassword');
+      expect(postgresStub.callCount).toEqual(1);
+      expect(postgresStub.firstCall.args[0]).toEqual(
+        'ALTER USER "fakeUsername" WITH ENCRYPTED PASSWORD \'fakePassword\'',
+      );
+    });
+
+    it('logs on error', async () => {
+      postgresStub.onFirstCall().rejects(new Error('whoopsie'));
+      await expect(conformPassword(client, 'fakeUsername', 'fakePassword')).rejects.toThrowError('whoopsie');
+    });
   });
 
-  it('logs on error', async () => {
-    postgresStub.onFirstCall().rejects(new Error('whoopsie'));
-    await expect(createUser(client, 'fakeUsername')).rejects.toThrowError('whoopsie');
+  describe('grantPrivileges', () => {
+    it.todo('grants for readers');
+    it.todo('grants for writers');
+    it.todo('logs on error');
   });
-});
-
-describe('conformPassword', () => {
-  it.todo('conforms password');
-  it.todo('logs on error');
-});
-
-describe('grantPrivileges', () => {
-  it.todo('grants for readers');
-  it.todo('grants for writers');
-  it.todo('logs on error');
 });
 
 describe('handler', () => {
