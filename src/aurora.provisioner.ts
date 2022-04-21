@@ -170,6 +170,7 @@ async function onCreate(
 
   return resultFactory({
     PhysicalResourceId: secretResult.username,
+    ReasonPrefix: 'Success',
     Status: CfnStatus.SUCCESS,
   });
 }
