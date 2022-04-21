@@ -10,11 +10,13 @@ import {
   //  grantPrivileges
 } from '../src/aurora.provisioner';
 
+sinon.stub(console, 'log');
+
 describe('fetchAndConformSecrets', () => {
   const getSecretValueStub = sinon.stub();
   AWSMock.mock('SecretsManager', 'getSecretValue', getSecretValueStub);
-  const putSecretValueSpy = sinon.spy();
-  AWSMock.mock('SecretsManager', 'putSecretValue', putSecretValueSpy);
+  const putSecretValueStub = sinon.stub();
+  AWSMock.mock('SecretsManager', 'putSecretValue', putSecretValueStub);
 
   const standardResult = {
     clientConfig: {
@@ -29,7 +31,7 @@ describe('fetchAndConformSecrets', () => {
 
   beforeEach(() => {
     getSecretValueStub.resetHistory();
-    putSecretValueSpy.resetHistory();
+    putSecretValueStub.resetHistory();
     // managerSecret
     getSecretValueStub.onFirstCall().resolves({
       SecretString: JSON.stringify({
@@ -43,10 +45,32 @@ describe('fetchAndConformSecrets', () => {
   });
 
   it.todo('updates user secret when missing engine');
-  it.todo('updates user secret when missing host');
+  it('updates user secret when missing host', async () => {
+    getSecretValueStub.onSecondCall().resolves({
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+        engine: 'userEngine',
+      }),
+    });
+    putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+    const r = await fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn');
+    expect(r).toEqual(standardResult);
+    expect(putSecretValueStub.callCount).toEqual(1);
+    expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      SecretId: 'fakeUserSecretArn',
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+        engine: 'userEngine',
+        host: 'managerHost',
+      }),
+    });
+  });
+
   it('does not update user secret when both host and engine are already set', async () => {
     // userSecret
-    getSecretValueStub.onSecondCall().returns({
+    getSecretValueStub.onSecondCall().resolves({
       SecretString: JSON.stringify({
         password: 'userPassword',
         username: 'userUsername',
@@ -56,7 +80,7 @@ describe('fetchAndConformSecrets', () => {
     });
     const r = await fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn');
     expect(r).toEqual(standardResult);
-    expect(putSecretValueSpy.notCalled).toBe(true);
+    expect(putSecretValueStub.notCalled).toBe(true);
   });
 });
 
