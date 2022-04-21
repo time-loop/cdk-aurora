@@ -1,16 +1,28 @@
 const { clickupCdk } = require('@time-loop/clickup-projen');
 
+const bundledDeps = ['aws-lambda', 'aws-sdk', 'aws-xray-sdk-core', 'pg', 'pg-format'];
 const peerDeps = ['constructs@^10.0.5', 'multi-convention-namer@^0.1.11'];
 
 const project = new clickupCdk.ClickUpCdkConstructLibrary({
   name: '@time-loop/cdk-aurora',
 
-  cdkVersion: '2.17.0',
+  cdkVersion: '2.13.0',
   defaultReleaseBranch: 'main',
   licensed: true,
 
-  deps: [...peerDeps],
-  devDeps: [...peerDeps, '@time-loop/clickup-projen'],
+  bundledDeps,
+  deps: [...bundledDeps],
+  devDeps: [
+    ...peerDeps,
+    '@time-loop/clickup-projen',
+    '@types/aws-lambda',
+    '@types/pg',
+    '@types/pg-format',
+    '@types/sinon',
+    'aws-sdk-mock',
+    'sinon',
+    'sinon-spy-utils',
+  ],
   peerDeps,
 
   repositoryUrl: '', // leverage default

@@ -37,12 +37,17 @@
   },
   "devDependencies": {
     "@time-loop/clickup-projen": "^0.0.33",
+    "@types/aws-lambda": "^8.10.94",
     "@types/jest": "^27.4.1",
     "@types/node": "^14",
+    "@types/pg": "^8.6.5",
+    "@types/pg-format": "^1.0.2",
+    "@types/sinon": "^10.0.11",
     "@typescript-eslint/eslint-plugin": "^5",
     "@typescript-eslint/parser": "^5",
-    "aws-cdk-lib": "2.17.0",
-    "constructs": "^10.0.5",
+    "aws-cdk-lib": "2.13.0",
+    "aws-sdk-mock": "^5.6.2",
+    "constructs": "10.0.5",
     "esbuild": "^0.14.36",
     "eslint": "^8",
     "eslint-config-prettier": "^8.5.0",
@@ -58,23 +63,35 @@
     "jsii-pacmak": "^1.56.0",
     "jsii-release": "^0.2.324",
     "json-schema": "^0.4.0",
-    "multi-convention-namer": "^0.1.11",
+    "multi-convention-namer": "0.1.11",
     "npm-check-updates": "^12",
     "prettier": "^2.6.2",
     "projen": "^0.54.14",
+    "sinon": "^13.0.2",
+    "sinon-spy-utils": "^1.0.5",
     "standard-version": "^9",
     "ts-jest": "^27.1.4",
     "typescript": "^4.6.3"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.17.0",
+    "aws-cdk-lib": "^2.13.0",
     "constructs": "^10.0.5",
     "multi-convention-namer": "^0.1.11"
   },
   "dependencies": {
-    "constructs": "^10.0.5",
-    "multi-convention-namer": "^0.1.11"
+    "aws-lambda": "^1.0.7",
+    "aws-sdk": "^2.1116.0",
+    "aws-xray-sdk-core": "^3.3.5",
+    "pg": "^8.7.3",
+    "pg-format": "^1.0.4"
   },
+  "bundledDependencies": [
+    "aws-lambda",
+    "aws-sdk",
+    "aws-xray-sdk-core",
+    "pg",
+    "pg-format"
+  ],
   "keywords": [
     "cdk"
   ],
