@@ -111,9 +111,9 @@ async function onCreate(
 
   const m = new Methods();
 
-  let secretData;
+  let secretResult: SecretsResult;
   try {
-    secretData = await m.fetchAndConformSecrets(managerSecretArn, userSecretArn);
+    secretResult = await m.fetchAndConformSecrets(managerSecretArn, userSecretArn);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: 'none',
@@ -123,17 +123,17 @@ async function onCreate(
   }
 
   const client = new Client({
-    ...secretData.clientConfig,
+    ...secretResult.clientConfig,
     database: dbName ?? 'postgres', // The grants below care which db we are in. But defaulting to postgres is fine if we just are handling users.
   });
   await client.connect();
 
   try {
-    await m.createUser(client, secretData.username);
-    await m.conformPassword(client, secretData.username, secretData.password);
+    await m.createUser(client, secretResult.username);
+    await m.conformPassword(client, secretResult.username, secretResult.password);
   } catch (err) {
     return resultFactory({
-      PhysicalResourceId: secretData.username,
+      PhysicalResourceId: secretResult.username,
       Status: CfnStatus.FAILED,
     });
   }
@@ -142,22 +142,22 @@ async function onCreate(
   if (!dbName) {
     console.log(`No dbName specified. Skipping further grants.`);
     return resultFactory({
-      PhysicalResourceId: secretData.username,
+      PhysicalResourceId: secretResult.username,
       Status: CfnStatus.SUCCESS,
     });
   }
 
   try {
-    await m.grantPrivileges(client, secretData.username, dbName, isWriter);
+    await m.grantPrivileges(client, secretResult.username, dbName, isWriter);
   } catch (err) {
     return resultFactory({
-      PhysicalResourceId: secretData.username,
+      PhysicalResourceId: secretResult.username,
       Status: CfnStatus.FAILED,
     });
   }
 
   return resultFactory({
-    PhysicalResourceId: secretData.username,
+    PhysicalResourceId: secretResult.username,
     Status: CfnStatus.SUCCESS,
   });
 }
