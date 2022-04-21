@@ -169,31 +169,30 @@ describe('fetchAndConformSecrets', () => {
     expect(putSecretValueStub.notCalled).toBe(true);
   });
 
-  // it('passes through errors on put', async () => {
-  //   getSecretValueStub.onSecondCall().resolves({
-  //     SecretString: JSON.stringify({
-  //       password: 'userPassword',
-  //       username: 'userUsername',
-  //     }),
-  //   });
-  //   putSecretValueStub.onFirstCall().resolves({ $response: { error: new Error('whoopsie') } });
+  it('passes through errors on put', async () => {
+    getSecretValueStub.onSecondCall().resolves({
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+      }),
+    });
+    putSecretValueStub.onFirstCall().resolves({ $response: { error: new Error('whoopsie') } });
 
-  //   await expect(m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn')).rejects.toThrowError(
-  //     'whoopsie',
-  //   );
+    await expect(m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn')).rejects.toThrowError(
+      'whoopsie',
+    );
 
-  //   expect(putSecretValueStub.callCount).toEqual(1);
-  //   expect(putSecretValueStub.firstCall.args[0]).toEqual({
-  //     SecretId: 'fakeUserSecretArn',
-  //     SecretString: JSON.stringify({
-  //       password: 'userPassword',
-  //       username: 'userUsername',
-  //       host: 'managerHost',
-  //       engine: 'managerEngine',
-  //     }),
-  //   });
-  // });
-  it.todo('wtf');
+    expect(putSecretValueStub.callCount).toEqual(1);
+    expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      SecretId: 'fakeUserSecretArn',
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+        host: 'managerHost',
+        engine: 'managerEngine',
+      }),
+    });
+  });
 });
 
 describe('postgres', () => {
