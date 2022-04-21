@@ -117,16 +117,25 @@ async function onCreate(
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: 'none',
+      ReasonPrefix: `Secrets issue: ${err}`,
       Status: CfnStatus.FAILED,
-      ReasonPrefix: `Secrets issue: ${JSON.stringify(err)}`,
     });
   }
 
-  const client = new Client({
-    ...secretResult.clientConfig,
-    database: dbName ?? 'postgres', // The grants below care which db we are in. But defaulting to postgres is fine if we just are handling users.
-  });
-  await client.connect();
+  let client: Client;
+  try {
+    client = new Client({
+      ...secretResult.clientConfig,
+      database: dbName ?? 'postgres', // The grants below care which db we are in. But defaulting to postgres is fine if we just are handling users.
+    });
+    await client.connect();
+  } catch (err) {
+    return resultFactory({
+      PhysicalResourceId: secretResult.username,
+      ReasonPrefix: `client.connect failed: ${err}`,
+      Status: CfnStatus.FAILED,
+    });
+  }
 
   try {
     await m.createUser(client, secretResult.username);
@@ -134,6 +143,7 @@ async function onCreate(
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
+      ReasonPrefix: `Create / conform issue: ${err}`,
       Status: CfnStatus.FAILED,
     });
   }
@@ -143,6 +153,7 @@ async function onCreate(
     console.log(`No dbName specified. Skipping further grants.`);
     return resultFactory({
       PhysicalResourceId: secretResult.username,
+      ReasonPrefix: 'No dbName specified. Skipping further grants.',
       Status: CfnStatus.SUCCESS,
     });
   }
@@ -152,6 +163,7 @@ async function onCreate(
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
+      ReasonPrefix: `Grant issue: ${err}`,
       Status: CfnStatus.FAILED,
     });
   }
