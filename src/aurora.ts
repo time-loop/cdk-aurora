@@ -199,8 +199,8 @@ export class Aurora extends Construct {
       onEventHandler,
     });
 
-    const rdsUserProvisioner = (id: Namer, properties: RdsUserProvisionerProps) =>
-      new CustomResource(this, id.addSuffix(['creator']).pascal, {
+    const rdsUserProvisioner = (provisionerId: Namer, properties: RdsUserProvisionerProps) =>
+      new CustomResource(this, provisionerId.addSuffix(['creator']).pascal, {
         resourceType: 'Custom::RdsUser',
         properties,
         serviceToken: provider.serviceToken,
