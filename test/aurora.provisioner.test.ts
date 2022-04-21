@@ -44,7 +44,29 @@ describe('fetchAndConformSecrets', () => {
     });
   });
 
-  it.todo('updates user secret when missing engine');
+  it('updates user secret when missing engine', async () => {
+    getSecretValueStub.onSecondCall().resolves({
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+        host: 'userHost',
+      }),
+    });
+    putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+    const r = await fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
+    expect(r).toEqual(standardResult);
+    expect(putSecretValueStub.callCount).toEqual(1);
+    expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      SecretId: 'fakeUserSecretArn',
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+        host: 'userHost',
+        engine: 'managerEngine',
+      }),
+    });
+  });
+
   it('updates user secret when missing host', async () => {
     getSecretValueStub.onSecondCall().resolves({
       SecretString: JSON.stringify({
@@ -54,7 +76,7 @@ describe('fetchAndConformSecrets', () => {
       }),
     });
     putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
-    const r = await fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn');
+    const r = await fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
     expect(r).toEqual(standardResult);
     expect(putSecretValueStub.callCount).toEqual(1);
     expect(putSecretValueStub.firstCall.args[0]).toEqual({
