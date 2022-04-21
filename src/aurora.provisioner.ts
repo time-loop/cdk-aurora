@@ -109,9 +109,11 @@ async function onCreate(
     });
   }
 
+  const m = new Methods();
+
   let secretData;
   try {
-    secretData = await fetchAndConformSecrets(managerSecretArn, userSecretArn);
+    secretData = await m.fetchAndConformSecrets(managerSecretArn, userSecretArn);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: 'none',
@@ -127,8 +129,8 @@ async function onCreate(
   await client.connect();
 
   try {
-    await createUser(client, secretData.username);
-    await conformPassword(client, secretData.username, secretData.password);
+    await m.createUser(client, secretData.username);
+    await m.conformPassword(client, secretData.username, secretData.password);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretData.username,
@@ -146,7 +148,7 @@ async function onCreate(
   }
 
   try {
-    await grantPrivileges(client, secretData.username, dbName, isWriter);
+    await m.grantPrivileges(client, secretData.username, dbName, isWriter);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretData.username,
@@ -221,134 +223,145 @@ export interface SecretsResult {
   password: string;
 }
 
-export async function fetchAndConformSecrets(managerSecretArn: string, userSecretArn: string): Promise<SecretsResult> {
-  const secretsManager = new awsSdk.SecretsManager();
-
-  const managerSecretRaw = await secretsManager.getSecretValue({ SecretId: managerSecretArn }).promise();
-  const managerSecret = JSON.parse(managerSecretRaw.SecretString!);
-
-  const userSecretRaw = await secretsManager.getSecretValue({ SecretId: userSecretArn }).promise();
-  const userSecret = JSON.parse(userSecretRaw.SecretString!);
-
-  // Pull the host and engine information from the managerSecret and push it into the userSecret.
-  var updatedUserSecret = false;
-  if (!userSecret.hasOwnProperty('host')) {
-    console.log('Updating user secret with host from manager secret');
-    userSecret.host = managerSecret.host;
-    updatedUserSecret = true;
-  }
-  if (!userSecret.host) {
-    console.log('Updating user secret with host from manager secret');
-    userSecret.host = managerSecret.host;
-    updatedUserSecret = true;
-  }
-  if (!userSecret.hasOwnProperty('engine')) {
-    console.log('Updating user secret with engine from manager secret');
-    userSecret.engine = managerSecret.engine;
-    updatedUserSecret = true;
-  }
-  if (!userSecret.engine) {
-    console.log('Updating user secret with engine from manager secret');
-    userSecret.engine = managerSecret.engine;
-    updatedUserSecret = true;
-  }
-
-  // push secret, if updated
-  if (!updatedUserSecret) {
-    console.log(
-      `User ${JSON.stringify(userSecret.username)} secret already has host and engine information. Nothing to update.`,
-    );
-  } else {
-    console.log(`Updating user secret for ${JSON.stringify(userSecret.username)}.`);
-    const r = await secretsManager
-      .putSecretValue({ SecretId: userSecretArn, SecretString: JSON.stringify(userSecret) })
-      .promise();
-    console.log(`putSecretValue ${userSecretArn} response: ${JSON.stringify(r)}`);
-    if (r.$response.error) {
-      throw r.$response.error;
-    }
-  }
-
-  return {
-    clientConfig: {
-      host: managerSecret.host,
-      port: managerSecret.port,
-      user: managerSecret.username,
-      password: managerSecret.password,
-    },
-    username: userSecret.username,
-    password: userSecret.password,
-  };
-}
-
 /**
- * Does the user already exist? If not, create them.
- * @param client
- * @param username
- * @returns -
+ * This class exists only to work around the problem of mocking / stubbing out
+ * these methods when testing the handler.
+ * Writing testable code... is sometimes a little weird.
  */
-export async function createUser(client: Client, username: string): Promise<void> {
-  try {
-    const res = await client.query(`SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = $1`, [username]);
-    if (res.rowCount > 0) {
-      console.log(`User ${username} already exists. Skipping creation.`);
+export class Methods {
+  /**
+   * Fetch secrets from SecretsManager and conform the user secret
+   * by adding a host and engine, as necessary.
+   * @param managerSecretArn
+   * @param userSecretArn
+   * @returns
+   */
+  public async fetchAndConformSecrets(managerSecretArn: string, userSecretArn: string): Promise<SecretsResult> {
+    const secretsManager = new awsSdk.SecretsManager();
+
+    const managerSecretRaw = await secretsManager.getSecretValue({ SecretId: managerSecretArn }).promise();
+    const managerSecret = JSON.parse(managerSecretRaw.SecretString!);
+
+    const userSecretRaw = await secretsManager.getSecretValue({ SecretId: userSecretArn }).promise();
+    const userSecret = JSON.parse(userSecretRaw.SecretString!);
+
+    // Pull the host and engine information from the managerSecret and push it into the userSecret.
+    var updatedUserSecret = false;
+    if (!userSecret.hasOwnProperty('host')) {
+      console.log('Updating user secret with host from manager secret');
+      userSecret.host = managerSecret.host;
+      updatedUserSecret = true;
+    }
+    if (!userSecret.host) {
+      console.log('Updating user secret with host from manager secret');
+      userSecret.host = managerSecret.host;
+      updatedUserSecret = true;
+    }
+    if (!userSecret.hasOwnProperty('engine')) {
+      console.log('Updating user secret with engine from manager secret');
+      userSecret.engine = managerSecret.engine;
+      updatedUserSecret = true;
+    }
+    if (!userSecret.engine) {
+      console.log('Updating user secret with engine from manager secret');
+      userSecret.engine = managerSecret.engine;
+      updatedUserSecret = true;
+    }
+
+    // push secret, if updated
+    if (!updatedUserSecret) {
+      console.log(
+        `User ${JSON.stringify(
+          userSecret.username,
+        )} secret already has host and engine information. Nothing to update.`,
+      );
     } else {
-      const sql = format('CREATE USER %I NOINHERIT PASSWORD NULL', username);
-      console.log(`Running: ${sql}`);
-      await client.query(sql);
+      console.log(`Updating user secret for ${JSON.stringify(userSecret.username)}.`);
+      const r = await secretsManager
+        .putSecretValue({ SecretId: userSecretArn, SecretString: JSON.stringify(userSecret) })
+        .promise();
+      console.log(`putSecretValue ${userSecretArn} response: ${JSON.stringify(r)}`);
+      if (r.$response.error) {
+        throw r.$response.error;
+      }
     }
-  } catch (err) {
-    console.log(`Failed creating ${username}: ${JSON.stringify(err)}`);
-    throw err;
-  }
-}
 
-/**
- * Bonk password on the user.
- * @param client
- * @param username
- * @param password
- */
-export async function conformPassword(client: Client, username: string, password: string): Promise<void> {
-  try {
-    const alterPassword = format('ALTER USER %I WITH ENCRYPTED PASSWORD %L', username, password);
-    console.log(`Updating password for ${username} from secret`);
-    await client.query(alterPassword);
-  } catch (err) {
-    console.log(`Failed updating password for ${username}: ${JSON.stringify(err)}`);
-    throw err;
+    return {
+      clientConfig: {
+        host: managerSecret.host,
+        port: managerSecret.port,
+        user: managerSecret.username,
+        password: managerSecret.password,
+      },
+      username: userSecret.username,
+      password: userSecret.password,
+    };
   }
-}
 
-/**
- * Grant privileges to the user.
- * @param client
- * @param dbName
- * @param username
- * @param isWriter
- */
-export async function grantPrivileges(
-  client: Client,
-  dbName: string,
-  username: string,
-  isWriter: boolean,
-): Promise<void> {
-  try {
-    [
-      format('GRANT CONNECT ON DATABASE %I TO %I', dbName, username), // Usage on Database
-      format('GRANT USAGE ON SCHEMA %I TO %I', 'public', username), // Usage on Schema
-      format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', username), // Defaults on sequences
-      format(
-        'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
-        isWriter ? ', INSERT, UPDATE, DELETE' : '',
-        username,
-      ), // Defaults on tables
-    ].forEach(async (sql) => {
-      console.log(`Running: ${sql}`);
-      await client.query(sql);
-    });
-  } catch (err) {
-    console.log(`Failed granting privileges to ${username}: ${JSON.stringify(err)}`);
-    throw err;
+  /**
+   * Does the user already exist? If not, create them.
+   * @param client
+   * @param username
+   * @returns -
+   */
+  public async createUser(client: Client, username: string): Promise<void> {
+    try {
+      const res = await client.query(`SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = $1`, [username]);
+      if (res.rowCount > 0) {
+        console.log(`User ${username} already exists. Skipping creation.`);
+      } else {
+        const sql = format('CREATE USER %I NOINHERIT PASSWORD NULL', username);
+        console.log(`Running: ${sql}`);
+        await client.query(sql);
+      }
+    } catch (err) {
+      console.log(`Failed creating ${username}: ${JSON.stringify(err)}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Bonk password on the user.
+   * @param client
+   * @param username
+   * @param password
+   */
+  public async conformPassword(client: Client, username: string, password: string): Promise<void> {
+    try {
+      const alterPassword = format('ALTER USER %I WITH ENCRYPTED PASSWORD %L', username, password);
+      console.log(`Updating password for ${username} from secret`);
+      await client.query(alterPassword);
+    } catch (err) {
+      console.log(`Failed updating password for ${username}: ${JSON.stringify(err)}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Grant privileges to the user.
+   * @param client
+   * @param dbName
+   * @param username
+   * @param isWriter
+   */
+  public async grantPrivileges(client: Client, dbName: string, username: string, isWriter: boolean): Promise<void> {
+    try {
+      [
+        format('GRANT CONNECT ON DATABASE %I TO %I', dbName, username), // Usage on Database
+        format('GRANT USAGE ON SCHEMA %I TO %I', 'public', username), // Usage on Schema
+        format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', username), // Defaults on sequences
+        format(
+          'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
+          isWriter ? ', INSERT, UPDATE, DELETE' : '',
+          username,
+        ), // Defaults on tables
+      ].forEach(async (sql) => {
+        console.log(`Running: ${sql}`);
+        await client.query(sql);
+      });
+    } catch (err) {
+      console.log(`Failed granting privileges to ${username}: ${JSON.stringify(err)}`);
+      throw err;
+    }
   }
 }
