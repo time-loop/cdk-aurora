@@ -220,11 +220,10 @@ describe('postgres', () => {
       expect(postgresStub.secondCall.args[0]).toEqual('CREATE USER "fakeUsername" NOINHERIT PASSWORD NULL');
     });
 
-    // it('logs on error', async () => {
-    //   postgresStub.onFirstCall().rejects(new Error('whoopsie'));
-    //   await expect(m.createUser(client, 'fakeUsername')).rejects.toThrowError('whoopsie');
-    // });
-    it.todo('wtf');
+    it('logs on error', async () => {
+      postgresStub.onFirstCall().rejects(new Error('whoopsie'));
+      await expect(m.createUser(client, 'fakeUsername')).rejects.toThrowError('whoopsie');
+    });
   });
 
   describe('conformPassword', () => {
@@ -237,12 +236,10 @@ describe('postgres', () => {
       );
     });
 
-    // it('logs on error', async () => {
-    //   postgresStub.onFirstCall().rejects(new Error('whoopsie'));
-    //   await expect(m.conformPassword(client, 'fakeUsername', 'fakePassword')).rejects.toThrowError('whoopsie');
-    // });
-
-    it.todo('wtf');
+    it('logs on error', async () => {
+      postgresStub.onFirstCall().rejects(new Error('whoopsie'));
+      await expect(m.conformPassword(client, 'fakeUsername', 'fakePassword')).rejects.toThrowError('whoopsie');
+    });
   });
 
   describe('grantPrivileges', () => {
