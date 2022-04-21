@@ -17,29 +17,16 @@ const a = new Aurora(this, 'Aurora', {
   });
 ```
 
-NOTE: After deploying this in bootstrap mode, find the reader and writer secrets and add
-```
-engine: postgres
-host: ${{ cluster.clusterEndpoint }} // you'll have to look this up. Easiest way is to just look at the manager secret.
-```
-to both secrets. Then deploy without bootstrap.
-See: https://github.com/aws/aws-cdk/issues/19794
-for details.
-
-Also! Looks like the multiRotation stuff doesn't actually... create the user.
-Could just be because it's really old?
-Trying https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223 to see if that helps.
-
-So... we're going to need to build a lambda / custom resource to create the users.
-Unfortunate. Grants:
+We have a CustomResource which fills the gap of creating the users
+and provisioning some default grants:
 
 ```sql
-GRANT USAGE ON DATABASE clickup TO "my_stack_reader";
+GRANT CONNECT ON DATABASE defaultDatabaseName TO "my_stack_reader";
 GRANT USAGE ON SCHEMA public TO "my_stack_reader";
 ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO "my_stack_reader";
 ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO "my_stack_reader";
 
-GRANT USAGE ON DATABASE clickup TO "my_stack_writer";
+GRANT CONNECT ON DATABASE defaultDatabaseName TO "my_stack_writer";
 GRANT USAGE ON SCHEMA public TO "my_stack_writer";
 ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO "my_stack_writer";
 ALTER DEFAULT PRIVILEGES GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "my_stack_writer";
@@ -204,13 +191,14 @@ const auroraProps: AuroraProps = { ... }
 | --- | --- | --- |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.kmsKey">kmsKey</a></code> | <code>aws-cdk-lib.aws_kms.IKey</code> | The KMS key to use... everywhere. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.vpc">vpc</a></code> | <code>aws-cdk-lib.aws_ec2.IVpc</code> | In which VPC should the cluster be created? |
-| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.bootstrap">bootstrap</a></code> | <code>boolean</code> | When bootstrapping, hold off on creating the `addRotationMultiUser` and also the proxy. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.defaultDatabaseName">defaultDatabaseName</a></code> | <code>string</code> | Would you like a database created? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instances">instances</a></code> | <code>number</code> | How many instances? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instanceType">instanceType</a></code> | <code>aws-cdk-lib.aws_ec2.InstanceType</code> | https://aws.amazon.com/blogs/aws/new-amazon-rds-on-graviton2-processors/ says we can use Graviton2 processors. So, M6G, R6G, C6G? TODO: should we warn about non Graviton2 processor usage? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.removalPolicy">removalPolicy</a></code> | <code>aws-cdk-lib.RemovalPolicy</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.retention">retention</a></code> | <code>aws-cdk-lib.Duration</code> | *No description.* |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipAddRotationMultiUser">skipAddRotationMultiUser</a></code> | <code>boolean</code> | When bootstrapping, hold off on creating the `addRotationMultiUser`. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProxy">skipProxy</a></code> | <code>boolean</code> | By default, we provide a proxy for non-manager users. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipUserProvisioning">skipUserProvisioning</a></code> | <code>boolean</code> | When bootstrapping, hold off on provisioning users in the database. |
 
 ---
 
@@ -235,19 +223,6 @@ public readonly vpc: IVpc;
 - *Type:* aws-cdk-lib.aws_ec2.IVpc
 
 In which VPC should the cluster be created?
-
----
-
-##### `bootstrap`<sup>Optional</sup> <a name="bootstrap" id="@time-loop/cdk-aurora.AuroraProps.property.bootstrap"></a>
-
-```typescript
-public readonly bootstrap: boolean;
-```
-
-- *Type:* boolean
-- *Default:* false
-
-When bootstrapping, hold off on creating the `addRotationMultiUser` and also the proxy.
 
 ---
 
@@ -315,6 +290,19 @@ public readonly retention: Duration;
 
 ---
 
+##### `skipAddRotationMultiUser`<sup>Optional</sup> <a name="skipAddRotationMultiUser" id="@time-loop/cdk-aurora.AuroraProps.property.skipAddRotationMultiUser"></a>
+
+```typescript
+public readonly skipAddRotationMultiUser: boolean;
+```
+
+- *Type:* boolean
+- *Default:* false
+
+When bootstrapping, hold off on creating the `addRotationMultiUser`.
+
+---
+
 ##### `skipProxy`<sup>Optional</sup> <a name="skipProxy" id="@time-loop/cdk-aurora.AuroraProps.property.skipProxy"></a>
 
 ```typescript
@@ -325,6 +313,19 @@ public readonly skipProxy: boolean;
 - *Default:* false
 
 By default, we provide a proxy for non-manager users.
+
+---
+
+##### `skipUserProvisioning`<sup>Optional</sup> <a name="skipUserProvisioning" id="@time-loop/cdk-aurora.AuroraProps.property.skipUserProvisioning"></a>
+
+```typescript
+public readonly skipUserProvisioning: boolean;
+```
+
+- *Type:* boolean
+- *Default:* false
+
+When bootstrapping, hold off on provisioning users in the database.
 
 ---
 
