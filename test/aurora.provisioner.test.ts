@@ -199,9 +199,32 @@ describe('fetchAndConformSecrets', () => {
 });
 
 describe('createUser', () => {
-  it.todo('skips if user already exists');
-  it.todo('creates user if user does not exist');
-  it.todo('logs on error');
+  const postgresStub = sinon.stub(Client.prototype, 'query');
+  const client = new Client();
+  beforeEach(() => {
+    postgresStub.resetHistory();
+  });
+
+  it('skips if user already exists', async () => {
+    postgresStub.onFirstCall().resolves({ rowCount: 1 }); // 1 because user is found
+    await createUser(client, 'fakeUsername');
+    expect(postgresStub.callCount).toEqual(1); // only the check query, no query to create user
+    expect(postgresStub.firstCall.args[1]).toEqual(['fakeUsername']);
+  });
+
+  it('creates user if user does not exist', async () => {
+    postgresStub.onFirstCall().resolves({ rowCount: 0 }); // 0 because user is not found
+    postgresStub.onSecondCall().resolves({ rowCount: 0 });
+    await createUser(client, 'fakeUsername');
+    expect(postgresStub.callCount).toEqual(2); // check query and create user query
+    expect(postgresStub.firstCall.args[1]).toEqual(['fakeUsername']);
+    expect(postgresStub.secondCall.args[0]).toEqual('CREATE USER "fakeUsername" NOINHERIT PASSWORD NULL');
+  });
+
+  it('logs on error', async () => {
+    postgresStub.onFirstCall().rejects(new Error('whoopsie'));
+    await expect(createUser(client, 'fakeUsername')).rejects.toThrowError('whoopsie');
+  });
 });
 
 describe('conformPassword', () => {
