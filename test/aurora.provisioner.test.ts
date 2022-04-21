@@ -2,12 +2,7 @@ import AWSMock from 'aws-sdk-mock';
 import { Client } from 'pg';
 import sinon from 'sinon';
 
-import {
-  createUser,
-  conformPassword,
-  fetchAndConformSecrets,
-  //  grantPrivileges
-} from '../src/aurora.provisioner';
+import { createUser, conformPassword, fetchAndConformSecrets, grantPrivileges } from '../src/aurora.provisioner';
 
 sinon.stub(console, 'log');
 
@@ -245,7 +240,19 @@ describe('postgres', () => {
   });
 
   describe('grantPrivileges', () => {
-    it.todo('grants for readers');
+    it('grants for readers', async () => {
+      [...Array(4).keys()].forEach((n) => postgresStub.onCall(n).resolves({ rowCount: 0 }));
+      await grantPrivileges(client, 'fakeDbName', 'fakeUsername', false);
+      expect(postgresStub.callCount).toEqual(4);
+      expect(postgresStub.firstCall.args[0]).toEqual('GRANT CONNECT ON DATABASE "fakeDbName" TO "fakeUsername"');
+      expect(postgresStub.secondCall.args[0]).toEqual('GRANT USAGE ON SCHEMA public TO "fakeUsername"');
+      expect(postgresStub.thirdCall.args[0]).toEqual(
+        'ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO "fakeUsername"',
+      );
+      expect(postgresStub.getCall(3).args[0]).toEqual(
+        'ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO "fakeUsername"',
+      );
+    });
     it.todo('grants for writers');
     it.todo('logs on error');
   });
