@@ -2,7 +2,9 @@ import * as awsLambda from 'aws-lambda';
 import * as _awsSdk from 'aws-sdk';
 import * as awsXray from 'aws-xray-sdk-core';
 import { Client, ClientConfig } from 'pg';
+/* eslint-disable @typescript-eslint/no-require-imports */
 import format = require('pg-format');
+/* eslint-enable @typescript-eslint/no-require-imports */
 const awsSdk = awsXray.captureAWS(_awsSdk);
 
 export interface RdsUserProvisionerProps {
