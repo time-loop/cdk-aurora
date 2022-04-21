@@ -1,5 +1,4 @@
 import AWSMock from 'aws-sdk-mock';
-// import AWS from 'aws-sdk';
 import { Client } from 'pg';
 import sinon from 'sinon';
 
@@ -67,6 +66,30 @@ describe('fetchAndConformSecrets', () => {
     });
   });
 
+  it('updates user secret when empty engine', async () => {
+    getSecretValueStub.onSecondCall().resolves({
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+        host: 'userHost',
+        engine: '',
+      }),
+    });
+    putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+    const r = await fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
+    expect(r).toEqual(standardResult);
+    expect(putSecretValueStub.callCount).toEqual(1);
+    expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      SecretId: 'fakeUserSecretArn',
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+        host: 'userHost',
+        engine: 'managerEngine',
+      }),
+    });
+  });
+
   it('updates user secret when missing host', async () => {
     getSecretValueStub.onSecondCall().resolves({
       SecretString: JSON.stringify({
@@ -90,6 +113,52 @@ describe('fetchAndConformSecrets', () => {
     });
   });
 
+  it('updates user secret when empty host', async () => {
+    getSecretValueStub.onSecondCall().resolves({
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+        engine: 'userEngine',
+        host: '',
+      }),
+    });
+    putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+    const r = await fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
+    expect(r).toEqual(standardResult);
+    expect(putSecretValueStub.callCount).toEqual(1);
+    expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      SecretId: 'fakeUserSecretArn',
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+        engine: 'userEngine',
+        host: 'managerHost',
+      }),
+    });
+  });
+
+  it('updates user secret when missing both engine and host', async () => {
+    getSecretValueStub.onSecondCall().resolves({
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+      }),
+    });
+    putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+    const r = await fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
+    expect(r).toEqual(standardResult);
+    expect(putSecretValueStub.callCount).toEqual(1);
+    expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      SecretId: 'fakeUserSecretArn',
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+        host: 'managerHost',
+        engine: 'managerEngine',
+      }),
+    });
+  });
+
   it('does not update user secret when both host and engine are already set', async () => {
     // userSecret
     getSecretValueStub.onSecondCall().resolves({
@@ -103,6 +172,29 @@ describe('fetchAndConformSecrets', () => {
     const r = await fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn');
     expect(r).toEqual(standardResult);
     expect(putSecretValueStub.notCalled).toBe(true);
+  });
+
+  it('passes through errors on put', async () => {
+    getSecretValueStub.onSecondCall().resolves({
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+      }),
+    });
+    putSecretValueStub.onFirstCall().resolves({ $response: { error: new Error('whoopsie') } });
+
+    await expect(fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn')).rejects.toThrowError('whoopsie');
+
+    expect(putSecretValueStub.callCount).toEqual(1);
+    expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      SecretId: 'fakeUserSecretArn',
+      SecretString: JSON.stringify({
+        password: 'userPassword',
+        username: 'userUsername',
+        host: 'managerHost',
+        engine: 'managerEngine',
+      }),
+    });
   });
 });
 
