@@ -1,5 +1,6 @@
 import {
   Callback,
+  CloudFormationCustomResourceCreateEvent,
   CloudFormationCustomResourceDeleteEvent,
   CloudFormationCustomResourceEventCommon,
   CloudFormationCustomResourceUpdateEvent,
@@ -13,14 +14,7 @@ import { Methods, handler } from '../src/aurora.provisioner';
 sinon.stub(console, 'log');
 
 describe('handler', () => {
-  const fetchAndConformSecretsStub = sinon.stub(Methods.prototype, 'fetchAndConformSecrets');
-  const createUserStub = sinon.stub(Methods.prototype, 'createUser');
-  const conformPasswordStub = sinon.stub(Methods.prototype, 'conformPassword');
-  const grantPrivilegesStub = sinon.stub(Methods.prototype, 'grantPrivileges');
-  const postgresStub = sinon.stub(Client.prototype, 'query');
-
   const eventBase: CloudFormationCustomResourceEventCommon = {
-    // RequestType: 'Create',
     LogicalResourceId: 'fakeLogicalResourceId',
     RequestId: 'fakeRequestId',
     ResourceType: 'Custom::RdsUser',
@@ -28,7 +22,7 @@ describe('handler', () => {
     ResourceProperties: {
       ServiceToken: 'fakeServiceToken',
       userSecretArn: 'fakeUserSecretArn',
-      dbName: 'fakeDbName',
+      // dbName: 'fakeDbName',
       isWriter: true,
     },
     ServiceToken: 'fakeServiceToken',
@@ -52,15 +46,78 @@ describe('handler', () => {
 
   const callback: Callback = (_err, _data) => {};
 
-  beforeEach(() => {
-    fetchAndConformSecretsStub.resetHistory();
-    createUserStub.resetHistory();
-    conformPasswordStub.resetHistory();
-    grantPrivilegesStub.resetHistory();
-    postgresStub.resetHistory();
-  });
+  describe('runs onCreate', () => {
+    const originalEnv = process.env;
 
-  it.todo('runs onCreate');
+    const fetchAndConformSecretsStub = sinon.stub(Methods.prototype, 'fetchAndConformSecrets');
+    const createUserStub = sinon.stub(Methods.prototype, 'createUser');
+    const conformPasswordStub = sinon.stub(Methods.prototype, 'conformPassword');
+    const grantPrivilegesStub = sinon.stub(Methods.prototype, 'grantPrivileges');
+    const postgresStub = sinon.stub(Client.prototype, 'connect');
+
+    beforeEach(() => {
+      fetchAndConformSecretsStub.resetHistory();
+      createUserStub.resetHistory();
+      conformPasswordStub.resetHistory();
+      grantPrivilegesStub.resetHistory();
+      postgresStub.resetHistory();
+
+      jest.resetModules();
+      process.env = { ...originalEnv };
+    });
+
+    afterAll(() => {
+      process.env = originalEnv;
+    });
+
+    it('no MANAGER_SECRET_ARN', async () => {
+      const createEvent: CloudFormationCustomResourceCreateEvent = {
+        ...eventBase,
+        RequestType: 'Create',
+      };
+      const r = await handler(createEvent, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'none',
+        Reason: 'Failed to find MANAGER_SECRET_ARN in environment variables see also fakeLogStreamName',
+        ReasonPrefix: 'Failed to find MANAGER_SECRET_ARN in environment variables',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+    // it('no dbName set, skip grants', async () => {
+    //   const createEvent: CloudFormationCustomResourceCreateEvent = {
+    //     ...eventBase,
+    //     RequestType: 'Create',
+    //   };
+    //   process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+    //   fetchAndConformSecretsStub.resolves({
+    //     clientConfig: {
+    //       user: 'fakeManagerUser',
+    //       password: 'fakeManagerPassword',
+    //       host: 'fakeManagerHost',
+    //       port: 666,
+    //     },
+    //     username: 'fakeUsername',
+    //     password: 'fakePassword',
+    //   });
+    //   postgresStub.resolves();
+    //   createUserStub.resolves();
+    //   conformPasswordStub.resolves();
+    //   const r = await handler(createEvent, context, callback);
+    //   expect(r).toEqual({
+    //     LogicalResourceId: 'fakeLogicalResourceId',
+    //     PhysicalResourceId: 'fakeUsername',
+    //     Reason: 'Failed to find MANAGER_SECRET_ARN in environment variables see also fakeLogStreamName',
+    //     ReasonPrefix: 'Failed to find MANAGER_SECRET_ARN in environment variables',
+    //     RequestId: 'fakeRequestId',
+    //     StackId: 'fakeStackId',
+    //     Status: 'FAILED',
+    //   });
+    // });
+  });
 
   it('runs onUpdate', async () => {
     const updateEvent: CloudFormationCustomResourceUpdateEvent = {
