@@ -270,7 +270,7 @@
           "exec": "yarn install --check-files"
         },
         {
-          "exec": "yarn upgrade @time-loop/clickup-projen @types/aws-lambda @types/jest @types/node @types/pg @types/pg-format @typescript-eslint/eslint-plugin @typescript-eslint/parser aws-cdk-lib aws-sdk-mock constructs esbuild eslint-config-prettier eslint-import-resolver-node eslint-import-resolver-typescript eslint-plugin-import eslint-plugin-prettier eslint jest jest-junit jsii jsii-diff jsii-docgen jsii-pacmak jsii-release json-schema multi-convention-namer npm-check-updates prettier standard-version ts-jest typescript aws-lambda aws-sdk aws-xray-sdk-core pg pg-format aws-cdk-lib constructs multi-convention-namer aws-lambda aws-sdk aws-xray-sdk-core pg pg-format"
+          "exec": "yarn upgrade @time-loop/clickup-projen @types/aws-lambda @types/jest @types/node @types/pg @types/pg-format @types/sinon @typescript-eslint/eslint-plugin @typescript-eslint/parser aws-cdk-lib aws-sdk-mock constructs esbuild eslint-config-prettier eslint-import-resolver-node eslint-import-resolver-typescript eslint-plugin-import eslint-plugin-prettier eslint jest jest-junit jsii jsii-diff jsii-docgen jsii-pacmak jsii-release json-schema multi-convention-namer npm-check-updates prettier sinon sinon-spy-utils standard-version ts-jest typescript aws-lambda aws-sdk aws-xray-sdk-core pg pg-format aws-cdk-lib constructs multi-convention-namer aws-lambda aws-sdk aws-xray-sdk-core pg pg-format"
         },
         {
           "exec": "npx projen"

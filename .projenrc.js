@@ -18,7 +18,10 @@ const project = new clickupCdk.ClickUpCdkConstructLibrary({
     '@types/aws-lambda',
     '@types/pg',
     '@types/pg-format',
+    '@types/sinon',
     'aws-sdk-mock',
+    'sinon',
+    'sinon-spy-utils',
   ],
   peerDeps,
 
