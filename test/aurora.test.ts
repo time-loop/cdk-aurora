@@ -42,6 +42,17 @@ describe('Aurora', () => {
     // });
   });
   describe('options', () => {
+    it('activityStream', () => {
+      const app = new App();
+      const stack = new Stack(app, 'test');
+      const kmsKey = new aws_kms.Key(stack, 'Key');
+      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
+      const a = new Aurora(stack, new Namer(['test']), { kmsKey, vpc, activityStream: true });
+      const template = assertions.Template.fromStack(stack);
+      template.resourceCountIs('AWS::Lambda::Function', 8);
+      template.resourceCountIs('Custom::RdsActivityStream', 1);
+      expect(a.activityStreamArn).not.toBeFalsy();
+    });
     it('defaultDatabaseName', () => {
       const app = new App();
       const stack = new Stack(app, 'test');
