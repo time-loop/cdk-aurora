@@ -1,3 +1,4 @@
+import { join } from 'path';
 import {
   Annotations,
   aws_ec2,
@@ -17,7 +18,6 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { Namer } from 'multi-convention-namer';
-import { join } from 'path';
 
 import { RdsUserProvisionerProps } from './aurora.provisioner';
 import { clusterArn } from './helpers';

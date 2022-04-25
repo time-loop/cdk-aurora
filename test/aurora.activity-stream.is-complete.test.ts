@@ -1,5 +1,5 @@
-import AWSMock from 'aws-sdk-mock';
 import { Callback, CloudFormationCustomResourceEventCommon, Context } from 'aws-lambda';
+import AWSMock from 'aws-sdk-mock';
 import sinon from 'sinon';
 
 import { CfnRequestType, IsComplete, IsCompleteEvent } from '../src/aurora.activity-stream';

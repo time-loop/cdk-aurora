@@ -1,10 +1,10 @@
-import AWSMock from 'aws-sdk-mock';
 import {
   CloudFormationCustomResourceCreateEvent,
   CloudFormationCustomResourceDeleteEvent,
   CloudFormationCustomResourceEventCommon,
   CloudFormationCustomResourceUpdateEvent,
 } from 'aws-lambda';
+import AWSMock from 'aws-sdk-mock';
 import sinon from 'sinon';
 
 import { Methods } from '../src/aurora.activity-stream';

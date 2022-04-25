@@ -1,6 +1,6 @@
-import * as awsXray from 'aws-xray-sdk-core';
 import * as awsLambda from 'aws-lambda';
 import * as _awsSdk from 'aws-sdk';
+import * as awsXray from 'aws-xray-sdk-core';
 const awsSdk = awsXray.captureAWS(_awsSdk);
 
 export interface ActivityStreamConstructProps {
@@ -248,7 +248,7 @@ export const IsComplete = async (
       case CfnRequestType.DELETE:
         return { IsComplete: cluster.ActivityStreamStatus == 'stopped' };
       default:
-        return Promise.reject(`Unknown event RequestType in ${JSON.stringify(event)}`);
+        return await Promise.reject(`Unknown event RequestType in ${JSON.stringify(event)}`);
     }
   } catch (err) {
     console.error(err);
