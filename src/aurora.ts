@@ -246,7 +246,9 @@ export class Aurora extends Construct {
 
     if (!props.skipProxy) {
       this.proxy = new aws_rds.DatabaseProxy(this, 'Proxy', {
+        dbProxyName: id.pascal,
         proxyTarget: aws_rds.ProxyTarget.fromCluster(this.cluster),
+        //requireTLS: true, // If we're never allowing connections from outside the VPC, why bother?
         secrets: this.secrets,
         vpc: props.vpc,
       });
