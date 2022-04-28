@@ -104,7 +104,7 @@ describe('update', () => {
   };
 
   // I mean... this should never happen, but...
-  it('fails when onUpate fails', async () => {
+  it('fails when onUpdate fails', async () => {
     onUpdateStub.resolves({
       ...resultBase,
       Status: 'FAILED',
