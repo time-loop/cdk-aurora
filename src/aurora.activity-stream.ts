@@ -39,17 +39,17 @@ interface CreateData {
   PhysicalResourceId: string;
 }
 
-interface CreateResultProps {
+interface BaseResultProps {
   Data?: CreateData;
-  PhysicalResourceId: string;
   ReasonPrefix?: string;
+}
+
+interface CreateResultProps extends BaseResultProps {
+  PhysicalResourceId: string;
   Status: CfnStatus;
 }
 
-interface DeleteResultProps {
-  Data?: CreateData;
-  ReasonPrefix?: string;
-}
+interface DeleteResultProps extends BaseResultProps {}
 
 export class Methods {
   /**
