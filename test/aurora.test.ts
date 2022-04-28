@@ -18,6 +18,9 @@ describe('Aurora', () => {
         template.resourceCountIs(r, 3),
       );
     });
+    it('proxyName', () => {
+      template.hasResourceProperties('AWS::RDS::DBProxy', { DBProxyName: 'Test' });
+    });
     it('retention', () => {
       template.hasResourceProperties('AWS::RDS::DBCluster', {
         BackupRetentionPeriod: 1,
