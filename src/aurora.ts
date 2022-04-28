@@ -1,3 +1,4 @@
+import { join } from 'path';
 import {
   Annotations,
   aws_ec2,
@@ -13,16 +14,22 @@ import {
   CustomResource,
   Duration,
   RemovalPolicy,
+  Stack,
 } from 'aws-cdk-lib';
-// import * as statement from 'cdk-iam-floyd';
 import { Construct } from 'constructs';
 import { Namer } from 'multi-convention-namer';
 
 import { RdsUserProvisionerProps } from './aurora.provisioner';
+import { clusterArn } from './helpers';
 
 const passwordRotationVersion = '1.1.217';
 
 export interface AuroraProps {
+  /**
+   * Turn on the Activity Stream feature of the Aurora cluster.
+   * @default false
+   */
+  readonly activityStream?: boolean;
   /**
    * Would you like a database created? Otherwise you'll have to log in and create it.
    */
@@ -104,6 +111,7 @@ export interface AuroraProps {
  * ```
  */
 export class Aurora extends Construct {
+  readonly activityStreamArn?: string;
   readonly cluster: aws_rds.DatabaseCluster;
   readonly kmsKey: aws_kms.IKey;
   readonly proxy?: aws_rds.DatabaseProxy;
@@ -162,6 +170,51 @@ export class Aurora extends Construct {
       value: this.cluster.clusterReadEndpoint.socketAddress,
     });
 
+    // Enable the ActivityStream, if requested
+    const myConstruct = this;
+    const myStack = Stack.of(this);
+    if (props.activityStream) {
+      function activityStreamHandler(handler: string): aws_lambda_nodejs.NodejsFunction {
+        const fn = new aws_lambda_nodejs.NodejsFunction(myConstruct, `ActivityStream${handler}`, {
+          bundling: { minify: true },
+          entry: join(__dirname, 'aurora.activity-stream.ts'),
+          handler,
+          logRetention: aws_logs.RetentionDays.ONE_WEEK,
+          tracing: aws_lambda.Tracing.ACTIVE,
+        });
+
+        [
+          new aws_iam.PolicyStatement({
+            actions: ['rds:DescribeDBClusters', 'rds:StartActivityStream', 'rds:StopActivityStream'],
+            resources: [clusterArn(myStack.region, myStack.account, myConstruct.cluster.clusterIdentifier)],
+          }),
+          new aws_iam.PolicyStatement({
+            actions: ['kms:CreateGrant', 'kms:DescribeKey'],
+            resources: [myConstruct.kmsKey.keyArn],
+          }),
+        ].forEach((policy) => fn.addToRolePolicy(policy));
+
+        return fn;
+      }
+
+      const activityStreamProvider = new custom_resources.Provider(this, 'ActivityStreamProvider', {
+        logRetention: aws_logs.RetentionDays.ONE_WEEK,
+        onEventHandler: activityStreamHandler('OnEvent'),
+        isCompleteHandler: activityStreamHandler('IsComplete'),
+      });
+
+      const resource = new CustomResource(this, 'ActivityStream', {
+        serviceToken: activityStreamProvider.serviceToken,
+        resourceType: 'Custom::RdsActivityStream',
+        properties: {
+          clusterId: this.cluster.clusterIdentifier,
+          kmsKeyId: this.kmsKey.keyArn,
+        },
+      });
+
+      this.activityStreamArn = resource.getAttString('PhysicalResourceId');
+    }
+
     const managerRotation = this.cluster.addRotationSingleUser();
     // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
     const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
@@ -169,7 +222,7 @@ export class Aurora extends Construct {
 
     // Deploy user provisioner custom resource
     // See: https://github.com/aws/aws-cdk/issues/19794 for details.
-    const onEventHandler = new aws_lambda_nodejs.NodejsFunction(this, 'provisioner', {
+    const provisioner = new aws_lambda_nodejs.NodejsFunction(this, 'provisioner', {
       bundling: {
         externalModules: ['aws-lambda', 'aws-sdk'], // Lambda is just types. SDK is explicitly provided.
         minify: true,
@@ -191,12 +244,12 @@ export class Aurora extends Construct {
         actions: ['Decrypt', 'Describe*', 'Generate*', 'List*'].map((s) => `kms:${s}`),
         resources: [this.kmsKey.keyArn],
       }),
-    ].forEach((s) => onEventHandler.addToRolePolicy(s));
-    this.cluster.connections.allowDefaultPortFrom(onEventHandler, 'User provisioning lambda');
+    ].forEach((s) => provisioner.addToRolePolicy(s));
+    this.cluster.connections.allowDefaultPortFrom(provisioner, 'User provisioning lambda');
 
     const provider = new custom_resources.Provider(this, 'provider', {
       logRetention: aws_logs.RetentionDays.ONE_WEEK,
-      onEventHandler,
+      onEventHandler: provisioner,
     });
 
     const rdsUserProvisioner = (provisionerId: Namer, properties: RdsUserProvisionerProps) =>
@@ -217,7 +270,7 @@ export class Aurora extends Construct {
         masterSecret: this.cluster.secret,
       });
 
-      onEventHandler.addToRolePolicy(
+      provisioner.addToRolePolicy(
         new aws_iam.PolicyStatement({
           actions: ['DescribeSecret', 'GetSecretValue', 'ListSecretVersionIds', 'PutSecretValue'].map(
             (s) => `secretsmanager:${s}`,

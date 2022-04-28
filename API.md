@@ -116,6 +116,7 @@ Any object.
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.cluster">cluster</a></code> | <code>aws-cdk-lib.aws_rds.DatabaseCluster</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.kmsKey">kmsKey</a></code> | <code>aws-cdk-lib.aws_kms.IKey</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.secrets">secrets</a></code> | <code>aws-cdk-lib.aws_rds.DatabaseSecret[]</code> | *No description.* |
+| <code><a href="#@time-loop/cdk-aurora.Aurora.property.activityStreamArn">activityStreamArn</a></code> | <code>string</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.proxy">proxy</a></code> | <code>aws-cdk-lib.aws_rds.DatabaseProxy</code> | *No description.* |
 
 ---
@@ -162,6 +163,16 @@ public readonly secrets: DatabaseSecret[];
 
 ---
 
+##### `activityStreamArn`<sup>Optional</sup> <a name="activityStreamArn" id="@time-loop/cdk-aurora.Aurora.property.activityStreamArn"></a>
+
+```typescript
+public readonly activityStreamArn: string;
+```
+
+- *Type:* string
+
+---
+
 ##### `proxy`<sup>Optional</sup> <a name="proxy" id="@time-loop/cdk-aurora.Aurora.property.proxy"></a>
 
 ```typescript
@@ -191,6 +202,7 @@ const auroraProps: AuroraProps = { ... }
 | --- | --- | --- |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.kmsKey">kmsKey</a></code> | <code>aws-cdk-lib.aws_kms.IKey</code> | The KMS key to use... everywhere. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.vpc">vpc</a></code> | <code>aws-cdk-lib.aws_ec2.IVpc</code> | In which VPC should the cluster be created? |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.activityStream">activityStream</a></code> | <code>boolean</code> | Turn on the Activity Stream feature of the Aurora cluster. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.defaultDatabaseName">defaultDatabaseName</a></code> | <code>string</code> | Would you like a database created? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instances">instances</a></code> | <code>number</code> | How many instances? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instanceType">instanceType</a></code> | <code>aws-cdk-lib.aws_ec2.InstanceType</code> | https://aws.amazon.com/blogs/aws/new-amazon-rds-on-graviton2-processors/ says we can use Graviton2 processors. So, M6G, R6G, C6G? TODO: should we warn about non Graviton2 processor usage? |
@@ -223,6 +235,19 @@ public readonly vpc: IVpc;
 - *Type:* aws-cdk-lib.aws_ec2.IVpc
 
 In which VPC should the cluster be created?
+
+---
+
+##### `activityStream`<sup>Optional</sup> <a name="activityStream" id="@time-loop/cdk-aurora.AuroraProps.property.activityStream"></a>
+
+```typescript
+public readonly activityStream: boolean;
+```
+
+- *Type:* boolean
+- *Default:* false
+
+Turn on the Activity Stream feature of the Aurora cluster.
 
 ---
 
