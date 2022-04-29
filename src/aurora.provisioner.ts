@@ -21,6 +21,10 @@ export interface RdsUserProvisionerProps {
    * @default false
    */
   readonly isWriter?: boolean;
+  /**
+   * The address of the proxy.
+   */
+  readonly proxyHost?: string;
 }
 
 /**
@@ -98,6 +102,7 @@ async function onCreate(
   const userSecretArn = event.ResourceProperties.userSecretArn;
   const dbName = event.ResourceProperties.dbName;
   const isWriter = event.ResourceProperties.isWriter === 'true';
+  const proxyHost = event.ResourceProperties.proxyHost;
 
   // Fetch managerSecretArn from environment variable.
   const managerSecretArn = process.env.MANAGER_SECRET_ARN;
@@ -115,7 +120,7 @@ async function onCreate(
 
   let secretResult: SecretsResult;
   try {
-    secretResult = await m.fetchAndConformSecrets(managerSecretArn, userSecretArn);
+    secretResult = await m.fetchAndConformSecrets(managerSecretArn, userSecretArn, proxyHost);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: 'none',
@@ -249,9 +254,14 @@ export class Methods {
    * by adding a host and engine, as necessary.
    * @param managerSecretArn
    * @param userSecretArn
+   * @param proxyHost
    * @returns
    */
-  public async fetchAndConformSecrets(managerSecretArn: string, userSecretArn: string): Promise<SecretsResult> {
+  public async fetchAndConformSecrets(
+    managerSecretArn: string,
+    userSecretArn: string,
+    proxyHost?: string,
+  ): Promise<SecretsResult> {
     const secretsManager = new awsSdk.SecretsManager();
 
     const managerSecretRaw = await secretsManager.getSecretValue({ SecretId: managerSecretArn }).promise();
@@ -272,6 +282,7 @@ export class Methods {
       userSecret.host = managerSecret.host;
       updatedUserSecret = true;
     }
+
     if (!userSecret.hasOwnProperty('engine')) {
       console.log('Updating user secret with engine from manager secret');
       userSecret.engine = managerSecret.engine;
@@ -281,6 +292,25 @@ export class Methods {
       console.log('Updating user secret with engine from manager secret');
       userSecret.engine = managerSecret.engine;
       updatedUserSecret = true;
+    }
+
+    if (!proxyHost) {
+      if (userSecret.hasOwnProperty('proxyHost')) {
+        console.log('Updating user secret to remove proxyHost since we do not have proxyHost');
+        delete userSecret.proxyHost;
+        updatedUserSecret = true;
+      }
+    } else {
+      if (!userSecret.hasOwnProperty('proxyHost')) {
+        console.log('Updating user secret to add proxyHost');
+        userSecret.proxyHost = proxyHost;
+        updatedUserSecret = true;
+      }
+      if (userSecret.proxyHost != proxyHost) {
+        console.log('Updating user secret, proxyHost changed');
+        userSecret.proxyHost = proxyHost;
+        updatedUserSecret = true;
+      }
     }
 
     // push secret, if updated

@@ -115,7 +115,6 @@ export class Aurora extends Construct {
   readonly cluster: aws_rds.DatabaseCluster;
   readonly kmsKey: aws_kms.IKey;
   readonly proxy?: aws_rds.DatabaseProxy;
-  readonly secrets: aws_rds.DatabaseSecret[];
 
   constructor(scope: Construct, id: Namer, props: AuroraProps) {
     super(scope, id.pascal);
@@ -260,7 +259,7 @@ export class Aurora extends Construct {
       });
 
     // User management
-    this.secrets = ['reader', 'writer'].map((userStr) => {
+    const secrets = ['reader', 'writer'].map((userStr) => {
       const user = new Namer([userStr]);
       const username = id.addSuffix(user).snake;
       const secret = new aws_rds.DatabaseSecret(this, user.pascal, {
@@ -279,22 +278,13 @@ export class Aurora extends Construct {
         }),
       );
 
-      if (!props.skipUserProvisioning) {
-        const rdsUser = rdsUserProvisioner(user, {
-          userSecretArn: secret.secretArn,
-          dbName: props.defaultDatabaseName,
-          isWriter: userStr == 'writer', // good enough for now.
-        });
-        rdsUser.node.addDependency(this.cluster);
-      }
-
       if (!props.skipAddRotationMultiUser) {
         const rotation = this.cluster.addRotationMultiUser(user.pascal, { secret });
         // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
         const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;
         sarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
       }
-      return secret;
+      return { userStr, secret };
     });
 
     if (!props.skipProxy) {
@@ -302,12 +292,24 @@ export class Aurora extends Construct {
         dbProxyName: id.pascal,
         proxyTarget: aws_rds.ProxyTarget.fromCluster(this.cluster),
         //requireTLS: true, // If we're never allowing connections from outside the VPC, why bother?
-        secrets: this.secrets,
+        secrets: secrets.map((s) => s.secret),
         vpc: props.vpc,
       });
-      new CfnOutput(this, 'ProxyEndpoint', {
-        exportName: id.addSuffix(['Proxy', 'Endpoint']).pascal,
-        value: this.proxy.endpoint,
+    }
+    new CfnOutput(this, 'ProxyEndpoint', {
+      exportName: id.addSuffix(['Proxy', 'Endpoint']).pascal,
+      value: this.proxy?.endpoint ?? 'none',
+    });
+
+    if (!props.skipUserProvisioning) {
+      secrets.map((s) => {
+        const rdsUser = rdsUserProvisioner(new Namer([s.userStr]), {
+          dbName: props.defaultDatabaseName,
+          isWriter: s.userStr === 'writer',
+          proxyHost: this.proxy?.endpoint,
+          userSecretArn: s.secret.secretArn,
+        });
+        rdsUser.node.addDependency(this.cluster);
       });
     }
   }
