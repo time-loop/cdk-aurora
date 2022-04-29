@@ -259,6 +259,24 @@ describe('postgres', () => {
     postgresStub.resetHistory();
   });
 
+  describe('createDatabase', () => {
+    it('skips if database already exists', async () => {
+      postgresStub.onFirstCall().resolves({ rowCount: 1 }); // 1 because db is found
+      await m.createDatabase(client, 'fakeDbName');
+      expect(postgresStub.callCount).toEqual(1); // only the check query, no query to create database
+      expect(postgresStub.firstCall.args[1]).toEqual(['fakeDbName']);
+    });
+
+    it('created database if it does not exist', async () => {
+      postgresStub.onFirstCall().resolves({ rowCount: 0 }); // 0 because db is not found
+      postgresStub.onSecondCall().resolves({ rowCount: 1 }); // 1 because db is created
+      await m.createDatabase(client, 'fakeDbName');
+      expect(postgresStub.callCount).toEqual(2);
+      expect(postgresStub.firstCall.args[1]).toEqual(['fakeDbName']);
+      expect(postgresStub.secondCall.args[0]).toEqual('CREATE DATABASE "fakeDbName"');
+    });
+  });
+
   describe('createUser', () => {
     it('skips if user already exists', async () => {
       postgresStub.onFirstCall().resolves({ rowCount: 1 }); // 1 because user is found
