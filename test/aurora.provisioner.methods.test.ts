@@ -39,134 +39,192 @@ describe('fetchAndConformSecrets', () => {
     });
   });
 
-  it('updates user secret when missing engine', async () => {
-    getSecretValueStub.onSecondCall().resolves({
-      SecretString: JSON.stringify({
-        password: 'userPassword',
-        username: 'userUsername',
-        host: 'userHost',
-      }),
+  describe('without proxy', () => {
+    it('updates user secret when missing engine', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          host: 'userHost',
+        }),
+      });
+      putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.callCount).toEqual(1);
+      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+        SecretId: 'fakeUserSecretArn',
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          host: 'userHost',
+          engine: 'managerEngine',
+        }),
+      });
     });
-    putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
-    const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
-    expect(r).toEqual(standardResult);
-    expect(putSecretValueStub.callCount).toEqual(1);
-    expect(putSecretValueStub.firstCall.args[0]).toEqual({
-      SecretId: 'fakeUserSecretArn',
-      SecretString: JSON.stringify({
-        password: 'userPassword',
-        username: 'userUsername',
-        host: 'userHost',
-        engine: 'managerEngine',
-      }),
+
+    it('updates user secret when empty engine', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          host: 'userHost',
+          engine: '',
+        }),
+      });
+      putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.callCount).toEqual(1);
+      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+        SecretId: 'fakeUserSecretArn',
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          host: 'userHost',
+          engine: 'managerEngine',
+        }),
+      });
+    });
+
+    it('updates user secret when missing host', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          engine: 'userEngine',
+        }),
+      });
+      putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.callCount).toEqual(1);
+      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+        SecretId: 'fakeUserSecretArn',
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          engine: 'userEngine',
+          host: 'managerHost',
+        }),
+      });
+    });
+
+    it('updates user secret when empty host', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          engine: 'userEngine',
+          host: '',
+        }),
+      });
+      putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.callCount).toEqual(1);
+      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+        SecretId: 'fakeUserSecretArn',
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          engine: 'userEngine',
+          host: 'managerHost',
+        }),
+      });
+    });
+
+    it('updates user secret when missing both engine and host', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+        }),
+      });
+      putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.callCount).toEqual(1);
+      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+        SecretId: 'fakeUserSecretArn',
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          host: 'managerHost',
+          engine: 'managerEngine',
+        }),
+      });
+    });
+
+    it('does not update user secret when both host and engine are already set', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          engine: 'userEngine',
+          host: 'userHost',
+        }),
+      });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn');
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.notCalled).toBe(true);
     });
   });
 
-  it('updates user secret when empty engine', async () => {
-    getSecretValueStub.onSecondCall().resolves({
-      SecretString: JSON.stringify({
-        password: 'userPassword',
-        username: 'userUsername',
-        host: 'userHost',
-        engine: '',
-      }),
+  describe('with proxy', () => {
+    it('updates user secret to remove proxyHost if no proxyHost', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          engine: 'userEngine',
+          host: 'userHost',
+          proxyHost: 'shouldNotBeHere',
+        }),
+      });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn');
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.callCount).toEqual(1);
     });
-    putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
-    const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
-    expect(r).toEqual(standardResult);
-    expect(putSecretValueStub.callCount).toEqual(1);
-    expect(putSecretValueStub.firstCall.args[0]).toEqual({
-      SecretId: 'fakeUserSecretArn',
-      SecretString: JSON.stringify({
-        password: 'userPassword',
-        username: 'userUsername',
-        host: 'userHost',
-        engine: 'managerEngine',
-      }),
-    });
-  });
 
-  it('updates user secret when missing host', async () => {
-    getSecretValueStub.onSecondCall().resolves({
-      SecretString: JSON.stringify({
-        password: 'userPassword',
-        username: 'userUsername',
-        engine: 'userEngine',
-      }),
+    it('updates user secret when missing proxy', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          engine: 'userEngine',
+          host: 'userHost',
+        }),
+      });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn', 'fakeProxyHost');
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.callCount).toEqual(1);
+      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+        SecretId: 'fakeUserSecretArn',
+        SecretString:
+          '{"password":"userPassword","username":"userUsername","engine":"userEngine","host":"userHost","proxyHost":"fakeProxyHost"}',
+      });
     });
-    putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
-    const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
-    expect(r).toEqual(standardResult);
-    expect(putSecretValueStub.callCount).toEqual(1);
-    expect(putSecretValueStub.firstCall.args[0]).toEqual({
-      SecretId: 'fakeUserSecretArn',
-      SecretString: JSON.stringify({
-        password: 'userPassword',
-        username: 'userUsername',
-        engine: 'userEngine',
-        host: 'managerHost',
-      }),
-    });
-  });
 
-  it('updates user secret when empty host', async () => {
-    getSecretValueStub.onSecondCall().resolves({
-      SecretString: JSON.stringify({
-        password: 'userPassword',
-        username: 'userUsername',
-        engine: 'userEngine',
-        host: '',
-      }),
+    it('updates user secret when proxy changed', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          engine: 'userEngine',
+          host: 'userHost',
+          proxyHost: 'oldProxyHost',
+        }),
+      });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn', 'fakeProxyHost');
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.callCount).toEqual(1);
+      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+        SecretId: 'fakeUserSecretArn',
+        SecretString:
+          '{"password":"userPassword","username":"userUsername","engine":"userEngine","host":"userHost","proxyHost":"fakeProxyHost"}',
+      });
     });
-    putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
-    const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
-    expect(r).toEqual(standardResult);
-    expect(putSecretValueStub.callCount).toEqual(1);
-    expect(putSecretValueStub.firstCall.args[0]).toEqual({
-      SecretId: 'fakeUserSecretArn',
-      SecretString: JSON.stringify({
-        password: 'userPassword',
-        username: 'userUsername',
-        engine: 'userEngine',
-        host: 'managerHost',
-      }),
-    });
-  });
-
-  it('updates user secret when missing both engine and host', async () => {
-    getSecretValueStub.onSecondCall().resolves({
-      SecretString: JSON.stringify({
-        password: 'userPassword',
-        username: 'userUsername',
-      }),
-    });
-    putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
-    const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
-    expect(r).toEqual(standardResult);
-    expect(putSecretValueStub.callCount).toEqual(1);
-    expect(putSecretValueStub.firstCall.args[0]).toEqual({
-      SecretId: 'fakeUserSecretArn',
-      SecretString: JSON.stringify({
-        password: 'userPassword',
-        username: 'userUsername',
-        host: 'managerHost',
-        engine: 'managerEngine',
-      }),
-    });
-  });
-
-  it('does not update user secret when both host and engine are already set', async () => {
-    getSecretValueStub.onSecondCall().resolves({
-      SecretString: JSON.stringify({
-        password: 'userPassword',
-        username: 'userUsername',
-        engine: 'userEngine',
-        host: 'userHost',
-      }),
-    });
-    const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn');
-    expect(r).toEqual(standardResult);
-    expect(putSecretValueStub.notCalled).toBe(true);
   });
 
   it('passes through errors on put', async () => {
