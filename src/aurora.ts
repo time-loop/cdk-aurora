@@ -295,11 +295,11 @@ export class Aurora extends Construct {
         secrets: secrets.map((s) => s.secret),
         vpc: props.vpc,
       });
+      new CfnOutput(this, 'ProxyEndpoint', {
+        exportName: id.addSuffix(['Proxy', 'Endpoint']).pascal,
+        value: this.proxy.endpoint,
+      });
     }
-    new CfnOutput(this, 'ProxyEndpoint', {
-      exportName: id.addSuffix(['Proxy', 'Endpoint']).pascal,
-      value: this.proxy?.endpoint ?? 'none',
-    });
 
     if (!props.skipUserProvisioning) {
       secrets.map((s) => {
