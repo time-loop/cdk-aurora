@@ -115,6 +115,7 @@ export class Aurora extends Construct {
   readonly cluster: aws_rds.DatabaseCluster;
   readonly kmsKey: aws_kms.IKey;
   readonly proxy?: aws_rds.DatabaseProxy;
+  readonly secrets: aws_rds.DatabaseSecret[];
 
   constructor(scope: Construct, id: Namer, props: AuroraProps) {
     super(scope, id.pascal);
@@ -286,6 +287,7 @@ export class Aurora extends Construct {
       }
       return { userStr, secret };
     });
+    this.secrets = secrets.map((s) => s.secret);
 
     if (!props.skipProxy) {
       this.proxy = new aws_rds.DatabaseProxy(this, 'Proxy', {
