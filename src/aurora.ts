@@ -142,7 +142,6 @@ export class Aurora extends Construct {
         encryptionKey,
         secretName: secretName.pascal,
       },
-      defaultDatabaseName: props.defaultDatabaseName,
       engine: aws_rds.DatabaseClusterEngine.auroraPostgres({
         version: aws_rds.AuroraPostgresEngineVersion.VER_12_8, // RDS Proxy limitation
       }),
