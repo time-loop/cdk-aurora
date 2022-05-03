@@ -56,18 +56,18 @@ describe('Aurora', () => {
       template.resourceCountIs('Custom::RdsActivityStream', 1);
       expect(a.activityStreamArn).not.toBeFalsy();
     });
-    it('defaultDatabaseName', () => {
+    it('databaseName', () => {
       const app = new App();
       const stack = new Stack(app, 'test');
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, defaultDatabaseName: 'foo' });
+      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, databaseName: 'foo' });
       const template = assertions.Template.fromStack(stack);
       template.hasResourceProperties('AWS::RDS::DBCluster', {
-        DatabaseName: 'foo',
+        DatabaseName: assertions.Match.absent(), // we manage database creation via the custom resources
       });
       template.hasResourceProperties('Custom::RdsUser', {
-        dbName: 'foo',
+        databaseName: 'foo',
       });
     });
     it('instances', () => {

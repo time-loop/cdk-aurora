@@ -15,7 +15,7 @@ export interface RdsUserProvisionerProps {
   /**
    * The database to be granted
    */
-  readonly dbName?: string;
+  readonly databaseName?: string;
   /**
    * Should this user be granted "writer" defaults or "reader" defaults?
    * @default false
@@ -25,6 +25,59 @@ export interface RdsUserProvisionerProps {
    * The address of the proxy.
    */
   readonly proxyHost?: string;
+}
+
+interface NoData {}
+
+interface ResultProps {
+  /**
+   * Required by CloudFormation, however we don't use it.
+   */
+  Data?: NoData; // We won't actually be returning any data here.
+  /**
+   * We will be using the username for this.
+   */
+  PhysicalResourceId: string;
+  /**
+   * We will always add a suffix which references the logStreamName.
+   */
+  ReasonPrefix?: string;
+  /**
+   * Did it work?
+   */
+  Status: CfnStatus;
+}
+
+interface CreateUpdateProps {
+  LogicalResourceId: string;
+  logStreamName: string;
+  RequestId: string;
+  StackId: string;
+
+  userSecretArn: string;
+  databaseName?: string;
+  isWriter: boolean;
+  proxyHost?: string;
+}
+
+export interface SecretsResult {
+  /**
+   * DB Connection information
+   */
+  clientConfig: ClientConfig;
+  /**
+   * The username to be provisioned
+   */
+  username: string;
+  /**
+   * The password to be provisioned
+   */
+  password: string;
+}
+
+enum CfnStatus {
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
 }
 
 /**
@@ -58,132 +111,30 @@ export async function handler(
   }
 }
 
-enum CfnStatus {
-  SUCCESS = 'SUCCESS',
-  FAILED = 'FAILED',
-}
-
-interface NoData {}
-
-interface CreateResultProps {
-  /**
-   * Required by CloudFormation, however we don't use it.
-   */
-  Data?: NoData; // We won't actually be returning any data here.
-  /**
-   * We will be using the username for this.
-   */
-  PhysicalResourceId: string;
-  /**
-   * We will always add a suffix which references the logStreamName.
-   */
-  ReasonPrefix?: string;
-  /**
-   * Did it work?
-   */
-  Status: CfnStatus;
-}
-
+/**
+ * On create, conform
+ * @param event
+ * @param context
+ * @param _callback
+ * @returns
+ */
 async function onCreate(
   event: awsLambda.CloudFormationCustomResourceEvent,
   context: awsLambda.Context,
   _callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> {
-  const resultFactory = (props: CreateResultProps) => {
-    return {
-      ...props,
-      LogicalResourceId: event.LogicalResourceId,
-      Reason: `${props.ReasonPrefix} see also ${context.logStreamName}`,
-      RequestId: event.RequestId,
-      StackId: event.StackId,
-    };
-  };
   console.log(`onCreate event: ${JSON.stringify(event)}`);
   const userSecretArn = event.ResourceProperties.userSecretArn;
-  const dbName = event.ResourceProperties.dbName;
+  const databaseName = event.ResourceProperties.databaseName;
   const isWriter = event.ResourceProperties.isWriter === 'true';
   const proxyHost = event.ResourceProperties.proxyHost;
 
-  // Fetch managerSecretArn from environment variable.
-  const managerSecretArn = process.env.MANAGER_SECRET_ARN;
-  if (!managerSecretArn) {
-    const ReasonPrefix = 'Failed to find MANAGER_SECRET_ARN in environment variables';
-    console.log(ReasonPrefix);
-    return resultFactory({
-      PhysicalResourceId: 'none',
-      ReasonPrefix,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  const m = new Methods();
-
-  let secretResult: SecretsResult;
-  try {
-    secretResult = await m.fetchAndConformSecrets(managerSecretArn, userSecretArn, proxyHost);
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: 'none',
-      ReasonPrefix: `Secrets issue: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  let client: Client;
-  try {
-    client = new Client({
-      ...secretResult.clientConfig,
-      database: dbName ?? 'postgres', // The grants below care which db we are in. But defaulting to postgres is fine if we just are handling users.
-    });
-    await client.connect();
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: `client.connect failed: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  try {
-    await m.createUser(client, secretResult.username);
-    await m.conformPassword(client, secretResult.username, secretResult.password);
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: `Create / conform issue: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  // If we didn't get a dbName, we're done.
-  if (!dbName) {
-    console.log(`No dbName specified. Skipping further grants.`);
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: 'No dbName specified. Skipping further grants.',
-      Status: CfnStatus.SUCCESS,
-    });
-  }
-
-  try {
-    await m.grantPrivileges(client, secretResult.username, dbName, isWriter);
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: `Grant issue: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  return resultFactory({
-    PhysicalResourceId: secretResult.username,
-    ReasonPrefix: 'Success',
-    Status: CfnStatus.SUCCESS,
-  });
+  return createUpdate({ ...event, ...context, userSecretArn, databaseName: databaseName, isWriter, proxyHost });
 }
 
 /**
- * Currently a no-op. I don't think there's any value trying to do anything with this.
+ * On updates, conform.
+ *
  * @param event
  * @param context
  * @param _callback
@@ -195,14 +146,12 @@ const onUpdate = async (
   _callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> => {
   console.log(`onUpdate event: ${JSON.stringify(event)}`);
-  return {
-    LogicalResourceId: event.LogicalResourceId,
-    PhysicalResourceId: event.PhysicalResourceId,
-    Reason: `See CloudWatch Log Stream: ${context.logStreamName}`,
-    RequestId: event.RequestId,
-    StackId: event.StackId,
-    Status: CfnStatus.SUCCESS,
-  };
+  const userSecretArn = event.ResourceProperties.userSecretArn;
+  const databaseName = event.ResourceProperties.databaseName;
+  const isWriter = event.ResourceProperties.isWriter === 'true';
+  const proxyHost = event.ResourceProperties.proxyHost;
+
+  return createUpdate({ ...event, ...context, userSecretArn, databaseName: databaseName, isWriter, proxyHost });
 };
 
 /**
@@ -228,19 +177,129 @@ const onDelete = async (
   };
 };
 
-export interface SecretsResult {
-  /**
-   * DB Connection information
-   */
-  clientConfig: ClientConfig;
-  /**
-   * The username to be provisioned
-   */
-  username: string;
-  /**
-   * The password to be provisioned
-   */
-  password: string;
+/**
+ * Conform user secret (if necessary),
+ * create the user (if necessary),
+ * create the database (if necessary),
+ * and grant the user access.
+ *
+ * @param props
+ * @returns
+ */
+export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.CloudFormationCustomResourceResponse> {
+  const resultFactory = (p: ResultProps): awsLambda.CloudFormationCustomResourceResponse => {
+    return {
+      LogicalResourceId: props.LogicalResourceId,
+      PhysicalResourceId: p.PhysicalResourceId,
+      RequestId: props.RequestId,
+      Reason: `${p.ReasonPrefix} see also ${props.logStreamName}`,
+      StackId: props.StackId,
+      Status: p.Status,
+    };
+  };
+
+  // Fetch managerSecretArn from environment variable.
+  const managerSecretArn = process.env.MANAGER_SECRET_ARN;
+  if (!managerSecretArn) {
+    const ReasonPrefix = 'Failed to find MANAGER_SECRET_ARN in environment variables';
+    console.log(ReasonPrefix);
+    return resultFactory({
+      PhysicalResourceId: 'none',
+      ReasonPrefix,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
+  const m = new Methods();
+
+  let secretResult: SecretsResult;
+  try {
+    secretResult = await m.fetchAndConformSecrets(managerSecretArn, props.userSecretArn, props.proxyHost);
+  } catch (err) {
+    return resultFactory({
+      PhysicalResourceId: 'none',
+      ReasonPrefix: `Secrets issue: ${err}`,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
+  let client: Client;
+  try {
+    console.log(`Connecting to database "postgres"`);
+    client = new Client({
+      ...secretResult.clientConfig,
+      database: 'postgres', // The grants below care which db we are in. But defaulting to postgres is fine if we just are handling users.
+    });
+    await client.connect();
+  } catch (err) {
+    return resultFactory({
+      PhysicalResourceId: secretResult.username,
+      ReasonPrefix: `client.connect failed: ${err}`,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
+  try {
+    await m.createUser(client, secretResult.username);
+    await m.conformPassword(client, secretResult.username, secretResult.password);
+  } catch (err) {
+    return resultFactory({
+      PhysicalResourceId: secretResult.username,
+      ReasonPrefix: `Create / conform issue: ${err}`,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
+  // If we didn't get a databaseName, we're done.
+  if (!props.databaseName) {
+    console.log(`No databaseName specified. Skipping further grants.`);
+    return resultFactory({
+      PhysicalResourceId: secretResult.username,
+      ReasonPrefix: 'No databaseName specified. Skipping further grants.',
+      Status: CfnStatus.SUCCESS,
+    });
+  }
+
+  try {
+    await m.createDatabase(client, props.databaseName);
+  } catch (err) {
+    return resultFactory({
+      PhysicalResourceId: secretResult.username,
+      ReasonPrefix: `Create database issue: ${err}`,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
+  try {
+    console.log(`Connecting to database "${props.databaseName}"`);
+    client = new Client({
+      ...secretResult.clientConfig,
+      database: props.databaseName, // The grants below care which db we are in.
+    });
+    await client.connect();
+  } catch (err) {
+    return resultFactory({
+      PhysicalResourceId: secretResult.username,
+      ReasonPrefix: `client.connect failed: ${err}`,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
+  try {
+    await m.grantPrivileges(client, props.databaseName, secretResult.username, props.isWriter);
+  } catch (err) {
+    return resultFactory({
+      PhysicalResourceId: secretResult.username,
+      ReasonPrefix: `Grant issue: ${err}`,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
+  return resultFactory({
+    PhysicalResourceId: secretResult.username,
+    ReasonPrefix: 'Success',
+    Status: CfnStatus.SUCCESS,
+  });
 }
 
 /**
@@ -344,6 +403,27 @@ export class Methods {
   }
 
   /**
+   * Create the database, if it doesn't already exist.
+   * @param client
+   * @param databaseName
+   */
+  public async createDatabase(client: Client, databaseName: string): Promise<void> {
+    try {
+      // Does the db already exist?
+      const res = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', [databaseName]);
+      if (res.rowCount > 0) {
+        console.log(`Database ${databaseName} already exists.`);
+        return;
+      }
+      const sql = format('CREATE DATABASE %I', databaseName);
+      console.log(`Running: ${sql}`);
+      await client.query(sql);
+    } catch (err) {
+      console.log(`Error creating database ${databaseName}: ${err}`);
+    }
+  }
+
+  /**
    * Does the user already exist? If not, create them.
    * @param client
    * @param username
@@ -385,14 +465,19 @@ export class Methods {
   /**
    * Grant privileges to the user.
    * @param client
-   * @param dbName what database to grant privileges to
+   * @param databaseName what database to grant privileges to
    * @param username
    * @param isWriter whether or not to grant write privileges
    */
-  public async grantPrivileges(client: Client, dbName: string, username: string, isWriter: boolean): Promise<void> {
+  public async grantPrivileges(
+    client: Client,
+    databaseName: string,
+    username: string,
+    isWriter: boolean,
+  ): Promise<void> {
     try {
       [
-        format('GRANT CONNECT ON DATABASE %I TO %I', dbName, username), // Usage on Database
+        format('GRANT CONNECT ON DATABASE %I TO %I', databaseName, username), // Usage on Database
         format('GRANT USAGE ON SCHEMA %I TO %I', 'public', username), // Usage on Schema
         format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', username), // Defaults on sequences
         format(

@@ -13,11 +13,46 @@ import { Methods, handler } from '../src/aurora.provisioner';
 
 sinon.stub(console, 'log');
 
+const originalEnv = process.env;
+
+const fetchAndConformSecretsStub = sinon.stub(Methods.prototype, 'fetchAndConformSecrets');
+const createUserStub = sinon.stub(Methods.prototype, 'createUser');
+const conformPasswordStub = sinon.stub(Methods.prototype, 'conformPassword');
+const createDatabaseStub = sinon.stub(Methods.prototype, 'createDatabase');
+const grantPrivilegesStub = sinon.stub(Methods.prototype, 'grantPrivileges');
+const postgresStub = sinon.stub(Client.prototype, 'connect');
+
+const standardSecretResult = {
+  clientConfig: {
+    user: 'fakeManagerUser',
+    password: 'fakeManagerPassword',
+    host: 'fakeManagerHost',
+    port: 666,
+  },
+  username: 'fakeUsername',
+  password: 'fakePassword',
+};
+
+beforeEach(() => {
+  fetchAndConformSecretsStub.reset();
+  createUserStub.reset();
+  conformPasswordStub.reset();
+  createDatabaseStub.reset();
+  grantPrivilegesStub.reset();
+  postgresStub.reset();
+
+  jest.resetModules();
+  process.env = { ...originalEnv };
+});
+
+afterAll(() => {
+  process.env = originalEnv;
+});
+
 describe('handler', () => {
   const resourcePropertiesBase = {
     ServiceToken: 'fakeServiceToken',
     userSecretArn: 'fakeUserSecretArn',
-    // dbName: 'fakeDbName',
     isWriter: true,
   };
 
@@ -49,40 +84,6 @@ describe('handler', () => {
   const callback: Callback = (_err, _data) => {};
 
   describe('runs onCreate', () => {
-    const originalEnv = process.env;
-
-    const fetchAndConformSecretsStub = sinon.stub(Methods.prototype, 'fetchAndConformSecrets');
-    const createUserStub = sinon.stub(Methods.prototype, 'createUser');
-    const conformPasswordStub = sinon.stub(Methods.prototype, 'conformPassword');
-    const grantPrivilegesStub = sinon.stub(Methods.prototype, 'grantPrivileges');
-    const postgresStub = sinon.stub(Client.prototype, 'connect');
-
-    const standardSecretResult = {
-      clientConfig: {
-        user: 'fakeManagerUser',
-        password: 'fakeManagerPassword',
-        host: 'fakeManagerHost',
-        port: 666,
-      },
-      username: 'fakeUsername',
-      password: 'fakePassword',
-    };
-
-    beforeEach(() => {
-      fetchAndConformSecretsStub.resetHistory();
-      createUserStub.resetHistory();
-      conformPasswordStub.resetHistory();
-      grantPrivilegesStub.resetHistory();
-      postgresStub.resetHistory();
-
-      jest.resetModules();
-      process.env = { ...originalEnv };
-    });
-
-    afterAll(() => {
-      process.env = originalEnv;
-    });
-
     it('no MANAGER_SECRET_ARN', async () => {
       const createEvent: CloudFormationCustomResourceCreateEvent = {
         ...eventBase,
@@ -93,7 +94,6 @@ describe('handler', () => {
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'none',
         Reason: 'Failed to find MANAGER_SECRET_ARN in environment variables see also fakeLogStreamName',
-        ReasonPrefix: 'Failed to find MANAGER_SECRET_ARN in environment variables',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
@@ -112,7 +112,6 @@ describe('handler', () => {
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'none',
         Reason: 'Secrets issue: Error: whoopsie see also fakeLogStreamName',
-        ReasonPrefix: 'Secrets issue: Error: whoopsie',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
@@ -132,7 +131,6 @@ describe('handler', () => {
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeUsername',
         Reason: 'client.connect failed: Error: whoopsie see also fakeLogStreamName',
-        ReasonPrefix: 'client.connect failed: Error: whoopsie',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
@@ -153,7 +151,6 @@ describe('handler', () => {
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeUsername',
         Reason: 'Create / conform issue: Error: whoopsie see also fakeLogStreamName',
-        ReasonPrefix: 'Create / conform issue: Error: whoopsie',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
@@ -175,14 +172,13 @@ describe('handler', () => {
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeUsername',
         Reason: 'Create / conform issue: Error: whoopsie see also fakeLogStreamName',
-        ReasonPrefix: 'Create / conform issue: Error: whoopsie',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
       });
     });
 
-    it('no dbName set, skip grants', async () => {
+    it('no databaseName set, skip createDatabase and grants', async () => {
       const createEvent: CloudFormationCustomResourceCreateEvent = {
         ...eventBase,
         RequestType: 'Create',
@@ -199,11 +195,63 @@ describe('handler', () => {
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeUsername',
-        Reason: 'No dbName specified. Skipping further grants. see also fakeLogStreamName',
-        ReasonPrefix: 'No dbName specified. Skipping further grants.',
+        Reason: 'No databaseName specified. Skipping further grants. see also fakeLogStreamName',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'SUCCESS',
+      });
+    });
+
+    it('handles error from createDatabase', async () => {
+      const createEvent: CloudFormationCustomResourceCreateEvent = {
+        ...eventBase,
+        RequestType: 'Create',
+        ResourceProperties: {
+          ...resourcePropertiesBase,
+          databaseName: 'fakeDbName',
+        },
+      };
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchAndConformSecretsStub.resolves(standardSecretResult);
+      postgresStub.resolves();
+      createUserStub.resolves();
+      conformPasswordStub.resolves();
+      createDatabaseStub.rejects(new Error('whoopsie'));
+      const r = await handler(createEvent, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeUsername',
+        Reason: 'Create database issue: Error: whoopsie see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+    it('handles error from postgres re-connect', async () => {
+      const createEvent: CloudFormationCustomResourceCreateEvent = {
+        ...eventBase,
+        RequestType: 'Create',
+        ResourceProperties: {
+          ...resourcePropertiesBase,
+          databaseName: 'fakeDbName',
+        },
+      };
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchAndConformSecretsStub.resolves(standardSecretResult);
+      postgresStub.onFirstCall().resolves();
+      createUserStub.resolves();
+      conformPasswordStub.resolves();
+      createDatabaseStub.resolves();
+      postgresStub.onSecondCall().rejects(new Error('whoopsie'));
+      const r = await handler(createEvent, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeUsername',
+        Reason: 'client.connect failed: Error: whoopsie see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
       });
     });
 
@@ -213,7 +261,7 @@ describe('handler', () => {
         RequestType: 'Create',
         ResourceProperties: {
           ...resourcePropertiesBase,
-          dbName: 'fakeDbName',
+          databaseName: 'fakeDbName',
         },
       };
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
@@ -221,13 +269,13 @@ describe('handler', () => {
       postgresStub.resolves();
       createUserStub.resolves();
       conformPasswordStub.resolves();
+      createDatabaseStub.resolves();
       grantPrivilegesStub.rejects(new Error('whoopsie'));
       const r = await handler(createEvent, context, callback);
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeUsername',
         Reason: 'Grant issue: Error: whoopsie see also fakeLogStreamName',
-        ReasonPrefix: 'Grant issue: Error: whoopsie',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
@@ -240,7 +288,7 @@ describe('handler', () => {
         RequestType: 'Create',
         ResourceProperties: {
           ...resourcePropertiesBase,
-          dbName: 'fakeDbName',
+          databaseName: 'fakeDbName',
         },
       };
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
@@ -248,13 +296,13 @@ describe('handler', () => {
       postgresStub.resolves();
       createUserStub.resolves();
       conformPasswordStub.resolves();
+      createDatabaseStub.resolves();
       grantPrivilegesStub.resolves();
       const r = await handler(createEvent, context, callback);
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeUsername',
         Reason: 'Success see also fakeLogStreamName',
-        ReasonPrefix: 'Success',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'SUCCESS',
@@ -262,21 +310,209 @@ describe('handler', () => {
     });
   });
 
-  it('runs onUpdate', async () => {
-    const updateEvent: CloudFormationCustomResourceUpdateEvent = {
+  describe('runs onUpdate', () => {
+    const updateEventBase: CloudFormationCustomResourceUpdateEvent = {
       ...eventBase,
-      PhysicalResourceId: 'fakeUser',
-      RequestType: 'Update',
       OldResourceProperties: {},
+      PhysicalResourceId: 'fakeExistingResourceId',
+      RequestType: 'Update',
     };
-    const r = await handler(updateEvent, context, callback);
-    expect(r).toEqual({
-      LogicalResourceId: 'fakeLogicalResourceId',
-      PhysicalResourceId: 'fakeUser',
-      Reason: 'See CloudWatch Log Stream: fakeLogStreamName',
-      RequestId: 'fakeRequestId',
-      StackId: 'fakeStackId',
-      Status: 'SUCCESS',
+
+    it('no MANAGER_SECRET_ARN', async () => {
+      const r = await handler(updateEventBase, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'none',
+        Reason: 'Failed to find MANAGER_SECRET_ARN in environment variables see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+    it('handles error from fetchAndConformSecrets', async () => {
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchAndConformSecretsStub.rejects(new Error('whoopsie'));
+      const r = await handler(updateEventBase, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'none',
+        Reason: 'Secrets issue: Error: whoopsie see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+    it('handles error from postgres', async () => {
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchAndConformSecretsStub.resolves(standardSecretResult);
+      postgresStub.rejects(new Error('whoopsie'));
+      const r = await handler(updateEventBase, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeUsername',
+        Reason: 'client.connect failed: Error: whoopsie see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+    it('handles error from createUser', async () => {
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchAndConformSecretsStub.resolves(standardSecretResult);
+      postgresStub.resolves();
+      createUserStub.rejects(new Error('whoopsie'));
+      const r = await handler(updateEventBase, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeUsername',
+        Reason: 'Create / conform issue: Error: whoopsie see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+    it('handles error from conformPassword', async () => {
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchAndConformSecretsStub.resolves(standardSecretResult);
+      postgresStub.resolves();
+      createUserStub.resolves();
+      conformPasswordStub.rejects(new Error('whoopsie'));
+      const r = await handler(updateEventBase, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeUsername',
+        Reason: 'Create / conform issue: Error: whoopsie see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+    it('no dbName set, skip createDatabase and grants', async () => {
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchAndConformSecretsStub.resolves(standardSecretResult);
+      postgresStub.resolves();
+      createUserStub.resolves();
+      conformPasswordStub.resolves();
+      const r = await handler(updateEventBase, context, callback);
+      expect(fetchAndConformSecretsStub.callCount).toEqual(1);
+      expect(createUserStub.callCount).toEqual(1);
+      expect(conformPasswordStub.callCount).toEqual(1);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeUsername',
+        Reason: 'No databaseName specified. Skipping further grants. see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'SUCCESS',
+      });
+    });
+
+    it('handles error from createDatabase', async () => {
+      const updateEvent: CloudFormationCustomResourceUpdateEvent = {
+        ...updateEventBase,
+        ResourceProperties: {
+          ...resourcePropertiesBase,
+          databaseName: 'fakeDbName',
+        },
+      };
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchAndConformSecretsStub.resolves(standardSecretResult);
+      postgresStub.resolves();
+      createUserStub.resolves();
+      conformPasswordStub.resolves();
+      createDatabaseStub.rejects(new Error('whoopsie'));
+      const r = await handler(updateEvent, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeUsername',
+        Reason: 'Create database issue: Error: whoopsie see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+    it('handles error from postgres re-connect', async () => {
+      const createEvent: CloudFormationCustomResourceUpdateEvent = {
+        ...updateEventBase,
+        ResourceProperties: {
+          ...resourcePropertiesBase,
+          databaseName: 'fakeDbName',
+        },
+      };
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchAndConformSecretsStub.resolves(standardSecretResult);
+      postgresStub.onFirstCall().resolves();
+      createUserStub.resolves();
+      conformPasswordStub.resolves();
+      createDatabaseStub.resolves();
+      postgresStub.onSecondCall().rejects(new Error('whoopsie'));
+      const r = await handler(createEvent, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeUsername',
+        Reason: 'client.connect failed: Error: whoopsie see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+    it('handles error from grantPrivileges', async () => {
+      const updateEvent: CloudFormationCustomResourceUpdateEvent = {
+        ...updateEventBase,
+        ResourceProperties: {
+          ...resourcePropertiesBase,
+          databaseName: 'fakeDbName',
+        },
+      };
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchAndConformSecretsStub.resolves(standardSecretResult);
+      postgresStub.resolves();
+      createUserStub.resolves();
+      conformPasswordStub.resolves();
+      createDatabaseStub.resolves();
+      grantPrivilegesStub.rejects(new Error('whoopsie'));
+      const r = await handler(updateEvent, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeUsername',
+        Reason: 'Grant issue: Error: whoopsie see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+    it('succeeds', async () => {
+      const createEvent: CloudFormationCustomResourceUpdateEvent = {
+        ...updateEventBase,
+        ResourceProperties: {
+          ...resourcePropertiesBase,
+          databaseName: 'fakeDbName',
+        },
+      };
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchAndConformSecretsStub.resolves(standardSecretResult);
+      postgresStub.resolves();
+      createUserStub.resolves();
+      conformPasswordStub.resolves();
+      createDatabaseStub.resolves();
+      grantPrivilegesStub.resolves();
+      const r = await handler(createEvent, context, callback);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeUsername',
+        Reason: 'Success see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'SUCCESS',
+      });
     });
   });
 
