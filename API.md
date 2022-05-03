@@ -21,12 +21,12 @@ We have a CustomResource which fills the gap of creating the users
 and provisioning some default grants:
 
 ```sql
-GRANT CONNECT ON DATABASE defaultDatabaseName TO "my_stack_reader";
+GRANT CONNECT ON DATABASE databaseName TO "my_stack_reader";
 GRANT USAGE ON SCHEMA public TO "my_stack_reader";
 ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO "my_stack_reader";
 ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO "my_stack_reader";
 
-GRANT CONNECT ON DATABASE defaultDatabaseName TO "my_stack_writer";
+GRANT CONNECT ON DATABASE databaseName TO "my_stack_writer";
 GRANT USAGE ON SCHEMA public TO "my_stack_writer";
 ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO "my_stack_writer";
 ALTER DEFAULT PRIVILEGES GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "my_stack_writer";
@@ -203,7 +203,7 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.kmsKey">kmsKey</a></code> | <code>aws-cdk-lib.aws_kms.IKey</code> | The KMS key to use... everywhere. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.vpc">vpc</a></code> | <code>aws-cdk-lib.aws_ec2.IVpc</code> | In which VPC should the cluster be created? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.activityStream">activityStream</a></code> | <code>boolean</code> | Turn on the Activity Stream feature of the Aurora cluster. |
-| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.defaultDatabaseName">defaultDatabaseName</a></code> | <code>string</code> | Would you like a database created? |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.databaseName">databaseName</a></code> | <code>string</code> | Would you like a database created? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instances">instances</a></code> | <code>number</code> | How many instances? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instanceType">instanceType</a></code> | <code>aws-cdk-lib.aws_ec2.InstanceType</code> | https://aws.amazon.com/blogs/aws/new-amazon-rds-on-graviton2-processors/ says we can use Graviton2 processors. So, M6G, R6G, C6G? TODO: should we warn about non Graviton2 processor usage? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.removalPolicy">removalPolicy</a></code> | <code>aws-cdk-lib.RemovalPolicy</code> | *No description.* |
@@ -251,17 +251,18 @@ Turn on the Activity Stream feature of the Aurora cluster.
 
 ---
 
-##### `defaultDatabaseName`<sup>Optional</sup> <a name="defaultDatabaseName" id="@time-loop/cdk-aurora.AuroraProps.property.defaultDatabaseName"></a>
+##### `databaseName`<sup>Optional</sup> <a name="databaseName" id="@time-loop/cdk-aurora.AuroraProps.property.databaseName"></a>
 
 ```typescript
-public readonly defaultDatabaseName: string;
+public readonly databaseName: string;
 ```
 
 - *Type:* string
 
 Would you like a database created?
 
-Otherwise you'll have to log in and create it.
+This also will target which database has default grants applied for users.
+If you skip this, you will need to create your database and grant the users manually.
 
 ---
 
