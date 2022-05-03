@@ -129,7 +129,7 @@ async function onCreate(
   const isWriter = event.ResourceProperties.isWriter === 'true';
   const proxyHost = event.ResourceProperties.proxyHost;
 
-  return await createUpdate({ ...event, ...context, userSecretArn, dbName, isWriter, proxyHost });
+  return createUpdate({ ...event, ...context, userSecretArn, dbName, isWriter, proxyHost });
 }
 
 /**
@@ -151,7 +151,7 @@ const onUpdate = async (
   const isWriter = event.ResourceProperties.isWriter === 'true';
   const proxyHost = event.ResourceProperties.proxyHost;
 
-  return await createUpdate({ ...event, ...context, userSecretArn, dbName, isWriter, proxyHost });
+  return createUpdate({ ...event, ...context, userSecretArn, dbName, isWriter, proxyHost });
 };
 
 /**
