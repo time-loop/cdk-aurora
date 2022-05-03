@@ -225,6 +225,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
 
   let client: Client;
   try {
+    console.log(`Connecting to database "postgres"`);
     client = new Client({
       ...secretResult.clientConfig,
       database: 'postgres', // The grants below care which db we are in. But defaulting to postgres is fine if we just are handling users.
@@ -270,6 +271,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   }
 
   try {
+    console.log(`Connecting to database "${props.databaseName}"`);
     client = new Client({
       ...secretResult.clientConfig,
       database: props.databaseName, // The grants below care which db we are in.
