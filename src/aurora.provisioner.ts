@@ -286,7 +286,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   }
 
   try {
-    await m.grantPrivileges(client, secretResult.username, props.databaseName, props.isWriter);
+    await m.grantPrivileges(client, props.databaseName, secretResult.username, props.isWriter);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
