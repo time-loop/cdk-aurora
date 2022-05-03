@@ -31,9 +31,11 @@ export interface AuroraProps {
    */
   readonly activityStream?: boolean;
   /**
-   * Would you like a database created? Otherwise you'll have to log in and create it.
+   * Would you like a database created?
+   * This also will target which database has default grants applied for users.
+   * If you skip this, you will need to create your database and grant the users manually.
    */
-  readonly defaultDatabaseName?: string;
+  readonly databaseName?: string;
   /**
    * How many instances? DevOps strongly recommends at least 3 in prod environments and only 1 in dev environments.
    * @default - passthrough
@@ -99,12 +101,12 @@ export interface AuroraProps {
  * and provisioning some default grants:
  *
  * ```sql
- * GRANT CONNECT ON DATABASE defaultDatabaseName TO "my_stack_reader";
+ * GRANT CONNECT ON DATABASE databaseName TO "my_stack_reader";
  * GRANT USAGE ON SCHEMA public TO "my_stack_reader";
  * ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO "my_stack_reader";
  * ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO "my_stack_reader";
  *
- * GRANT CONNECT ON DATABASE defaultDatabaseName TO "my_stack_writer";
+ * GRANT CONNECT ON DATABASE databaseName TO "my_stack_writer";
  * GRANT USAGE ON SCHEMA public TO "my_stack_writer";
  * ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO "my_stack_writer";
  * ALTER DEFAULT PRIVILEGES GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "my_stack_writer";
@@ -305,7 +307,7 @@ export class Aurora extends Construct {
     if (!props.skipUserProvisioning) {
       secrets.map((s) => {
         const rdsUser = rdsUserProvisioner(new Namer([s.userStr]), {
-          dbName: props.defaultDatabaseName,
+          databaseName: props.databaseName,
           isWriter: s.userStr === 'writer',
           proxyHost: this.proxy?.endpoint,
           userSecretArn: s.secret.secretArn,

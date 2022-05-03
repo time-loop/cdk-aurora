@@ -53,7 +53,6 @@ describe('handler', () => {
   const resourcePropertiesBase = {
     ServiceToken: 'fakeServiceToken',
     userSecretArn: 'fakeUserSecretArn',
-    // dbName: 'fakeDbName',
     isWriter: true,
   };
 
@@ -179,7 +178,7 @@ describe('handler', () => {
       });
     });
 
-    it('no dbName set, skip createDatabase and grants', async () => {
+    it('no databaseName set, skip createDatabase and grants', async () => {
       const createEvent: CloudFormationCustomResourceCreateEvent = {
         ...eventBase,
         RequestType: 'Create',
@@ -196,7 +195,7 @@ describe('handler', () => {
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeUsername',
-        Reason: 'No dbName specified. Skipping further grants. see also fakeLogStreamName',
+        Reason: 'No databaseName specified. Skipping further grants. see also fakeLogStreamName',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'SUCCESS',
@@ -209,7 +208,7 @@ describe('handler', () => {
         RequestType: 'Create',
         ResourceProperties: {
           ...resourcePropertiesBase,
-          dbName: 'fakeDbName',
+          databaseName: 'fakeDbName',
         },
       };
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
@@ -235,7 +234,7 @@ describe('handler', () => {
         RequestType: 'Create',
         ResourceProperties: {
           ...resourcePropertiesBase,
-          dbName: 'fakeDbName',
+          databaseName: 'fakeDbName',
         },
       };
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
@@ -262,7 +261,7 @@ describe('handler', () => {
         RequestType: 'Create',
         ResourceProperties: {
           ...resourcePropertiesBase,
-          dbName: 'fakeDbName',
+          databaseName: 'fakeDbName',
         },
       };
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
@@ -289,7 +288,7 @@ describe('handler', () => {
         RequestType: 'Create',
         ResourceProperties: {
           ...resourcePropertiesBase,
-          dbName: 'fakeDbName',
+          databaseName: 'fakeDbName',
         },
       };
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
@@ -406,7 +405,7 @@ describe('handler', () => {
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeUsername',
-        Reason: 'No dbName specified. Skipping further grants. see also fakeLogStreamName',
+        Reason: 'No databaseName specified. Skipping further grants. see also fakeLogStreamName',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'SUCCESS',
@@ -418,7 +417,7 @@ describe('handler', () => {
         ...updateEventBase,
         ResourceProperties: {
           ...resourcePropertiesBase,
-          dbName: 'fakeDbName',
+          databaseName: 'fakeDbName',
         },
       };
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
@@ -443,7 +442,7 @@ describe('handler', () => {
         ...updateEventBase,
         ResourceProperties: {
           ...resourcePropertiesBase,
-          dbName: 'fakeDbName',
+          databaseName: 'fakeDbName',
         },
       };
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
@@ -469,7 +468,7 @@ describe('handler', () => {
         ...updateEventBase,
         ResourceProperties: {
           ...resourcePropertiesBase,
-          dbName: 'fakeDbName',
+          databaseName: 'fakeDbName',
         },
       };
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
@@ -495,7 +494,7 @@ describe('handler', () => {
         ...updateEventBase,
         ResourceProperties: {
           ...resourcePropertiesBase,
-          dbName: 'fakeDbName',
+          databaseName: 'fakeDbName',
         },
       };
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';

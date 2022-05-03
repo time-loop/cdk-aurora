@@ -15,7 +15,7 @@ export interface RdsUserProvisionerProps {
   /**
    * The database to be granted
    */
-  readonly dbName?: string;
+  readonly databaseName?: string;
   /**
    * Should this user be granted "writer" defaults or "reader" defaults?
    * @default false
@@ -55,7 +55,7 @@ interface CreateUpdateProps {
   StackId: string;
 
   userSecretArn: string;
-  dbName?: string;
+  databaseName?: string;
   isWriter: boolean;
   proxyHost?: string;
 }
@@ -125,11 +125,11 @@ async function onCreate(
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> {
   console.log(`onCreate event: ${JSON.stringify(event)}`);
   const userSecretArn = event.ResourceProperties.userSecretArn;
-  const dbName = event.ResourceProperties.dbName;
+  const databaseName = event.ResourceProperties.databaseName;
   const isWriter = event.ResourceProperties.isWriter === 'true';
   const proxyHost = event.ResourceProperties.proxyHost;
 
-  return createUpdate({ ...event, ...context, userSecretArn, dbName, isWriter, proxyHost });
+  return createUpdate({ ...event, ...context, userSecretArn, databaseName: databaseName, isWriter, proxyHost });
 }
 
 /**
@@ -147,11 +147,11 @@ const onUpdate = async (
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> => {
   console.log(`onUpdate event: ${JSON.stringify(event)}`);
   const userSecretArn = event.ResourceProperties.userSecretArn;
-  const dbName = event.ResourceProperties.dbName;
+  const databaseName = event.ResourceProperties.databaseName;
   const isWriter = event.ResourceProperties.isWriter === 'true';
   const proxyHost = event.ResourceProperties.proxyHost;
 
-  return createUpdate({ ...event, ...context, userSecretArn, dbName, isWriter, proxyHost });
+  return createUpdate({ ...event, ...context, userSecretArn, databaseName: databaseName, isWriter, proxyHost });
 };
 
 /**
@@ -249,18 +249,18 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
     });
   }
 
-  // If we didn't get a dbName, we're done.
-  if (!props.dbName) {
-    console.log(`No dbName specified. Skipping further grants.`);
+  // If we didn't get a databaseName, we're done.
+  if (!props.databaseName) {
+    console.log(`No databaseName specified. Skipping further grants.`);
     return resultFactory({
       PhysicalResourceId: secretResult.username,
-      ReasonPrefix: 'No dbName specified. Skipping further grants.',
+      ReasonPrefix: 'No databaseName specified. Skipping further grants.',
       Status: CfnStatus.SUCCESS,
     });
   }
 
   try {
-    await m.createDatabase(client, props.dbName);
+    await m.createDatabase(client, props.databaseName);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
@@ -272,7 +272,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   try {
     client = new Client({
       ...secretResult.clientConfig,
-      database: props.dbName, // The grants below care which db we are in.
+      database: props.databaseName, // The grants below care which db we are in.
     });
     await client.connect();
   } catch (err) {
@@ -284,7 +284,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   }
 
   try {
-    await m.grantPrivileges(client, secretResult.username, props.dbName, props.isWriter);
+    await m.grantPrivileges(client, secretResult.username, props.databaseName, props.isWriter);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
@@ -403,21 +403,21 @@ export class Methods {
   /**
    * Create the database, if it doesn't already exist.
    * @param client
-   * @param dbName
+   * @param databaseName
    */
-  public async createDatabase(client: Client, dbName: string): Promise<void> {
+  public async createDatabase(client: Client, databaseName: string): Promise<void> {
     try {
       // Does the db already exist?
-      const res = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', [dbName]);
+      const res = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', [databaseName]);
       if (res.rowCount > 0) {
-        console.log(`Database ${dbName} already exists.`);
+        console.log(`Database ${databaseName} already exists.`);
         return;
       }
-      const sql = format('CREATE DATABASE %I', dbName);
+      const sql = format('CREATE DATABASE %I', databaseName);
       console.log(`Running: ${sql}`);
       await client.query(sql);
     } catch (err) {
-      console.log(`Error creating database ${dbName}: ${err}`);
+      console.log(`Error creating database ${databaseName}: ${err}`);
     }
   }
 
@@ -463,14 +463,19 @@ export class Methods {
   /**
    * Grant privileges to the user.
    * @param client
-   * @param dbName what database to grant privileges to
+   * @param databaseName what database to grant privileges to
    * @param username
    * @param isWriter whether or not to grant write privileges
    */
-  public async grantPrivileges(client: Client, dbName: string, username: string, isWriter: boolean): Promise<void> {
+  public async grantPrivileges(
+    client: Client,
+    databaseName: string,
+    username: string,
+    isWriter: boolean,
+  ): Promise<void> {
     try {
       [
-        format('GRANT CONNECT ON DATABASE %I TO %I', dbName, username), // Usage on Database
+        format('GRANT CONNECT ON DATABASE %I TO %I', databaseName, username), // Usage on Database
         format('GRANT USAGE ON SCHEMA %I TO %I', 'public', username), // Usage on Schema
         format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', username), // Defaults on sequences
         format(
