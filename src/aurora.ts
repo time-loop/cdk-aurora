@@ -118,6 +118,7 @@ export class Aurora extends Construct {
   readonly kmsKey: aws_kms.IKey;
   readonly proxy?: aws_rds.DatabaseProxy;
   readonly secrets: aws_rds.DatabaseSecret[];
+  readonly securityGroup: aws_ec2.ISecurityGroup;
 
   constructor(scope: Construct, id: Namer, props: AuroraProps) {
     super(scope, id.pascal);
@@ -132,6 +133,11 @@ export class Aurora extends Construct {
     }
 
     const secretName = id.addSuffix(['manager']);
+
+    this.securityGroup = new aws_ec2.SecurityGroup(this, 'SecurityGroup', {
+      vpc: props.vpc,
+      allowAllOutbound: true,
+    });
 
     this.cluster = new aws_rds.DatabaseCluster(this, 'Database', {
       backup: {
@@ -150,6 +156,7 @@ export class Aurora extends Construct {
       instanceIdentifierBase: id.pascal,
       instanceProps: {
         instanceType,
+        securityGroups: [this.securityGroup],
         vpc: props.vpc,
       },
       instances: props.instances,
