@@ -31,6 +31,12 @@ export interface AuroraProps {
    */
   readonly activityStream?: boolean;
   /**
+   * Aside from granting default privileges in the `public`
+   * schema, should we grant them in additional schemas?
+   * @default - no additional schemas
+   */
+  readonly additionalSchema?: string[];
+  /**
    * Would you like a database created?
    * This also will target which database has default grants applied for users.
    * If you skip this, you will need to create your database and grant the users manually.
@@ -62,7 +68,8 @@ export interface AuroraProps {
   readonly retention?: Duration;
   /**
    * When bootstrapping, hold off on creating the `addRotationMultiUser`.
-   *
+   * NOTE: the multiUser strategy relies on a `_clone` user, which is potentially surprising.
+   * See https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotating-secrets_strategies.html#rotating-secrets-two-users
    * @default false
    */
   readonly skipAddRotationMultiUser?: boolean;
@@ -314,6 +321,7 @@ export class Aurora extends Construct {
     if (!props.skipUserProvisioning) {
       secrets.map((s) => {
         const rdsUser = rdsUserProvisioner(new Namer([s.userStr]), {
+          additionalSchema: props.additionalSchema ?? [],
           databaseName: props.databaseName,
           isWriter: s.userStr === 'writer',
           proxyHost: this.proxy?.endpoint,

@@ -13,6 +13,12 @@ export interface RdsUserProvisionerProps {
    */
   readonly userSecretArn: string;
   /**
+   * Aside from granting default privileges in the `public`
+   * schema, should we grant them in additional schemas?
+   * @default - no additional schemas
+   */
+  readonly additionalSchema?: string[];
+  /**
    * The database to be granted
    */
   readonly databaseName?: string;
@@ -58,6 +64,7 @@ interface CreateUpdateProps {
   databaseName?: string;
   isWriter: boolean;
   proxyHost?: string;
+  additionalSchema?: string[];
 }
 
 export interface SecretsResult {
@@ -128,8 +135,17 @@ async function onCreate(
   const databaseName = event.ResourceProperties.databaseName;
   const isWriter = event.ResourceProperties.isWriter === 'true';
   const proxyHost = event.ResourceProperties.proxyHost;
+  const additionalSchema = event.ResourceProperties.additionalSchema;
 
-  return createUpdate({ ...event, ...context, userSecretArn, databaseName: databaseName, isWriter, proxyHost });
+  return createUpdate({
+    ...event,
+    ...context,
+    userSecretArn,
+    databaseName: databaseName,
+    isWriter,
+    proxyHost,
+    additionalSchema,
+  });
 }
 
 /**
@@ -150,8 +166,17 @@ const onUpdate = async (
   const databaseName = event.ResourceProperties.databaseName;
   const isWriter = event.ResourceProperties.isWriter === 'true';
   const proxyHost = event.ResourceProperties.proxyHost;
+  const additionalSchema = event.ResourceProperties.additionalSchema;
 
-  return createUpdate({ ...event, ...context, userSecretArn, databaseName: databaseName, isWriter, proxyHost });
+  return createUpdate({
+    ...event,
+    ...context,
+    userSecretArn,
+    databaseName: databaseName,
+    isWriter,
+    proxyHost,
+    additionalSchema,
+  });
 };
 
 /**
@@ -286,7 +311,13 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   }
 
   try {
-    await m.grantPrivileges(client, props.databaseName, secretResult.username, props.isWriter);
+    await m.grantPrivileges(
+      client,
+      props.databaseName,
+      secretResult.username,
+      props.isWriter,
+      props.additionalSchema ?? [],
+    );
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
@@ -474,11 +505,12 @@ export class Methods {
     databaseName: string,
     username: string,
     isWriter: boolean,
+    additionalSchema: string[],
   ): Promise<void> {
     try {
       [
         format('GRANT CONNECT ON DATABASE %I TO %I', databaseName, username), // Usage on Database
-        format('GRANT USAGE ON SCHEMA %I TO %I', 'public', username), // Usage on Schema
+        ...['public', ...additionalSchema].map((s) => format('GRANT USAGE ON SCHEMA %I TO %I', s, username)), // Usage on Schema
         format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', username), // Defaults on sequences
         format(
           'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
