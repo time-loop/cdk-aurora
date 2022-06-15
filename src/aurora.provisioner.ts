@@ -131,20 +131,14 @@ async function onCreate(
   _callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> {
   console.log(`onCreate event: ${JSON.stringify(event)}`);
-  const userSecretArn = event.ResourceProperties.userSecretArn;
-  const databaseName = event.ResourceProperties.databaseName;
-  const isWriter = event.ResourceProperties.isWriter === 'true';
-  const proxyHost = event.ResourceProperties.proxyHost;
-  const additionalSchema = event.ResourceProperties.additionalSchema;
-
   return createUpdate({
     ...event,
     ...context,
-    userSecretArn,
-    databaseName: databaseName,
-    isWriter,
-    proxyHost,
-    additionalSchema,
+    userSecretArn: event.ResourceProperties.userSecretArn,
+    databaseName: event.ResourceProperties.databaseName,
+    isWriter: event.ResourceProperties.isWriter === 'true',
+    proxyHost: event.ResourceProperties.proxyHost,
+    additionalSchema: event.ResourceProperties.additionalSchema,
   });
 }
 
@@ -162,20 +156,14 @@ const onUpdate = async (
   _callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> => {
   console.log(`onUpdate event: ${JSON.stringify(event)}`);
-  const userSecretArn = event.ResourceProperties.userSecretArn;
-  const databaseName = event.ResourceProperties.databaseName;
-  const isWriter = event.ResourceProperties.isWriter === 'true';
-  const proxyHost = event.ResourceProperties.proxyHost;
-  const additionalSchema = event.ResourceProperties.additionalSchema;
-
   return createUpdate({
     ...event,
     ...context,
-    userSecretArn,
-    databaseName: databaseName,
-    isWriter,
-    proxyHost,
-    additionalSchema,
+    userSecretArn: event.ResourceProperties.userSecretArn,
+    databaseName: event.ResourceProperties.databaseName,
+    isWriter: event.ResourceProperties.isWriter === 'true',
+    proxyHost: event.ResourceProperties.proxyHost,
+    additionalSchema: event.ResourceProperties.additionalSchema,
   });
 };
 
