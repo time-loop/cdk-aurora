@@ -13,11 +13,10 @@ export interface RdsUserProvisionerProps {
    */
   readonly userSecretArn: string;
   /**
-   * Aside from granting default privileges in the `public`
-   * schema, should we grant them in additional schemas?
-   * @default - no additional schemas
+   * Schemas to create and grant defaults for users.
+   * @default ['public']
    */
-  readonly additionalSchema?: string[];
+  readonly schemas?: string[];
   /**
    * The database to be granted
    */
@@ -64,7 +63,7 @@ interface CreateUpdateProps {
   databaseName?: string;
   isWriter: boolean;
   proxyHost?: string;
-  additionalSchema?: string[];
+  schemas?: string[];
 }
 
 export interface SecretsResult {
@@ -138,7 +137,7 @@ async function onCreate(
     databaseName: event.ResourceProperties.databaseName,
     isWriter: event.ResourceProperties.isWriter === 'true',
     proxyHost: event.ResourceProperties.proxyHost,
-    additionalSchema: event.ResourceProperties.additionalSchema,
+    schemas: event.ResourceProperties.schemas,
   });
 }
 
@@ -163,7 +162,7 @@ const onUpdate = async (
     databaseName: event.ResourceProperties.databaseName,
     isWriter: event.ResourceProperties.isWriter === 'true',
     proxyHost: event.ResourceProperties.proxyHost,
-    additionalSchema: event.ResourceProperties.additionalSchema,
+    schemas: event.ResourceProperties.schemas,
   });
 };
 
@@ -200,6 +199,8 @@ const onDelete = async (
  * @returns
  */
 export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.CloudFormationCustomResourceResponse> {
+  const schemas = props.schemas ?? [];
+
   const resultFactory = (p: ResultProps): awsLambda.CloudFormationCustomResourceResponse => {
     return {
       LogicalResourceId: props.LogicalResourceId,
@@ -299,13 +300,17 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   }
 
   try {
-    await m.grantPrivileges(
-      client,
-      props.databaseName,
-      secretResult.username,
-      props.isWriter,
-      props.additionalSchema ?? [],
-    );
+    await Promise.all(schemas.map((s) => m.createSchema(client, s)));
+  } catch (err) {
+    return resultFactory({
+      PhysicalResourceId: secretResult.username,
+      ReasonPrefix: `Create schema issue: ${err}`,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
+  try {
+    await m.grantPrivileges(client, props.databaseName, secretResult.username, props.isWriter, schemas);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
@@ -330,6 +335,9 @@ export class Methods {
   /**
    * Fetch secrets from SecretsManager and conform the user secret
    * by adding a host and engine, as necessary.
+   * The vast majority of this stuff should be handled by the
+   * `secret.attach(cluster)` call in the stack.
+   * But... I wrote this before I knew about the `attach()` method.
    * @param managerSecretArn
    * @param userSecretArn
    * @param proxyHost
@@ -442,6 +450,16 @@ export class Methods {
     }
   }
 
+  public async createSchema(client: Client, schemaName: string): Promise<void> {
+    try {
+      const sql = format(`CREATE SCHEMA IF NOT EXISTS %I`, schemaName);
+      console.log(`Running: ${sql}`);
+      await client.query(sql);
+    } catch (err) {
+      console.log(`Error creating schema ${schemaName}: ${err}`);
+    }
+  }
+
   /**
    * Does the user already exist? If not, create them.
    * @param client
@@ -493,12 +511,12 @@ export class Methods {
     databaseName: string,
     username: string,
     isWriter: boolean,
-    additionalSchema: string[],
+    schemas: string[],
   ): Promise<void> {
     try {
       [
         format('GRANT CONNECT ON DATABASE %I TO %I', databaseName, username), // Usage on Database
-        ...['public', ...additionalSchema].map((s) => format('GRANT USAGE ON SCHEMA %I TO %I', s, username)), // Usage on Schema
+        ...schemas.map((s) => format('GRANT USAGE ON SCHEMA %I TO %I', s, username)), // Usage on Schema(s)
         format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', username), // Defaults on sequences
         format(
           'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',

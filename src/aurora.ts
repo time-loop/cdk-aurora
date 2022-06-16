@@ -31,12 +31,6 @@ export interface AuroraProps {
    */
   readonly activityStream?: boolean;
   /**
-   * Aside from granting default privileges in the `public`
-   * schema, should we grant them in additional schemas?
-   * @default - no additional schemas
-   */
-  readonly additionalSchema?: string[];
-  /**
    * Would you like a database created?
    * This also will target which database has default grants applied for users.
    * If you skip this, you will need to create your database and grant the users manually.
@@ -66,6 +60,11 @@ export interface AuroraProps {
    * @default Duration.days(1) This should pass through, but nope. So, we're duplicating the default.
    */
   readonly retention?: Duration;
+  /**
+   * Schemas to create and grant defaults for users.
+   * @default ['public']
+   */
+  readonly schemas?: string[];
   /**
    * When bootstrapping, hold off on creating the `addRotationMultiUser`.
    * NOTE: the multiUser strategy relies on a `_clone` user, which is potentially surprising.
@@ -129,6 +128,8 @@ export class Aurora extends Construct {
 
   constructor(scope: Construct, id: Namer, props: AuroraProps) {
     super(scope, id.pascal);
+
+    const schemas = props.schemas ?? ['public'];
 
     const encryptionKey = (this.kmsKey = props.kmsKey);
     const instanceType =
@@ -284,6 +285,7 @@ export class Aurora extends Construct {
         secretName: id.addSuffix(user).pascal,
         masterSecret: this.cluster.secret,
       });
+      secret.attach(this.cluster); // This inserts the DB info into the secret
 
       provisioner.addToRolePolicy(
         new aws_iam.PolicyStatement({
@@ -302,6 +304,7 @@ export class Aurora extends Construct {
       }
       return { userStr, secret };
     });
+
     this.secrets = secrets.map((s) => s.secret);
 
     if (!props.skipProxy) {
@@ -321,10 +324,10 @@ export class Aurora extends Construct {
     if (!props.skipUserProvisioning) {
       secrets.map((s) => {
         const rdsUser = rdsUserProvisioner(new Namer([s.userStr]), {
-          additionalSchema: props.additionalSchema ?? [],
           databaseName: props.databaseName,
           isWriter: s.userStr === 'writer',
           proxyHost: this.proxy?.endpoint,
+          schemas,
           userSecretArn: s.secret.secretArn,
         });
         rdsUser.node.addDependency(this.cluster);
