@@ -236,6 +236,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
       Status: CfnStatus.FAILED,
     });
   }
+  const usernameClone = secretResult.username + '_clone';
 
   let client: Client;
   try {
@@ -256,6 +257,8 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   try {
     await m.createUser(client, secretResult.username);
     await m.conformPassword(client, secretResult.username, secretResult.password);
+    await m.createUser(client, usernameClone);
+    await m.conformPassword(client, usernameClone, secretResult.password);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
@@ -310,7 +313,19 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   }
 
   try {
-    await m.grantPrivileges(client, props.databaseName, secretResult.username, props.isWriter, schemas);
+    await m.createRoles(client, props.databaseName, schemas);
+  } catch (err) {
+    return resultFactory({
+      PhysicalResourceId: secretResult.username,
+      ReasonPrefix: `Create roles issue: ${err}`,
+      Status: CfnStatus.FAILED,
+    });
+  }
+
+  try {
+    const role = props.isWriter ? 'r_writer' : 'r_reader';
+    await m.grantRole(client, secretResult.username, role);
+    await m.grantRole(client, usernameClone, role);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
@@ -461,6 +476,44 @@ export class Methods {
   }
 
   /**
+   * Creates r_reader and r_writer roles and grants them
+   * @param client
+   * @param databaseName
+   * @param schemas
+   */
+  public async createRoles(client: Client, databaseName: string, schemas: string[]): Promise<void> {
+    try {
+      ['r_reader', 'r_writer'].forEach(async (role) => {
+        const isWriter = role == 'r_writer';
+        const res = await client.query(`SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = $1`, [role]);
+        if (res.rowCount > 0) {
+          console.log(`Role ${role} already exists. Skipping creation.`);
+        } else {
+          const sql = format('CREATE ROLE %I NOINHERIT', role);
+          console.log(`Running: ${sql}`);
+          await client.query(sql);
+        }
+        [
+          format('GRANT CONNECT ON DATABASE %I TO %I', databaseName, role), // Usage on Database
+          ...schemas.map((s) => format('GRANT USAGE ON SCHEMA %I TO %I', s, role)), // Usage on Schema(s)
+          format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', role), // Defaults on sequences
+          format(
+            'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
+            isWriter ? ', INSERT, UPDATE, DELETE' : '',
+            role,
+          ), // Defaults on tables
+        ].forEach(async (sql) => {
+          console.log(`Running: ${sql}`);
+          await client.query(sql);
+        });
+      });
+    } catch (err) {
+      console.log(`Failed creating roles: ${JSON.stringify(err)}`);
+      throw err;
+    }
+  }
+
+  /**
    * Does the user already exist? If not, create them.
    * @param client
    * @param username
@@ -502,33 +555,17 @@ export class Methods {
   /**
    * Grant privileges to the user.
    * @param client
-   * @param databaseName what database to grant privileges to
+   * @param databaseName what database to grant privileges in
    * @param username
-   * @param isWriter whether or not to grant write privileges
+   * @param role which role to grant
    */
-  public async grantPrivileges(
-    client: Client,
-    databaseName: string,
-    username: string,
-    isWriter: boolean,
-    schemas: string[],
-  ): Promise<void> {
+  public async grantRole(client: Client, username: string, role: string): Promise<void> {
     try {
-      [
-        format('GRANT CONNECT ON DATABASE %I TO %I', databaseName, username), // Usage on Database
-        ...schemas.map((s) => format('GRANT USAGE ON SCHEMA %I TO %I', s, username)), // Usage on Schema(s)
-        format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', username), // Defaults on sequences
-        format(
-          'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
-          isWriter ? ', INSERT, UPDATE, DELETE' : '',
-          username,
-        ), // Defaults on tables
-      ].forEach(async (sql) => {
-        console.log(`Running: ${sql}`);
-        await client.query(sql);
-      });
+      const sql = format('GRANT %I TO %I', role, username);
+      console.log(`Running: ${sql}`);
+      await client.query(sql);
     } catch (err) {
-      console.log(`Failed granting privileges to ${username}: ${JSON.stringify(err)}`);
+      console.log(`Failed granting ${role} to ${username}: ${JSON.stringify(err)}`);
       throw err;
     }
   }

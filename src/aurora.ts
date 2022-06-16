@@ -276,6 +276,7 @@ export class Aurora extends Construct {
       });
 
     // User management
+    // TODO: support arbitrary reader and writer users
     const secrets = ['reader', 'writer'].map((userStr) => {
       const user = new Namer([userStr]);
       const username = id.addSuffix(user).snake;
