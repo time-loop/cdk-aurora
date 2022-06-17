@@ -13,15 +13,6 @@ export interface RdsUserProvisionerProps {
    */
   readonly userSecretArn: string;
   /**
-   * Schemas to create and grant defaults for users.
-   * @default ['public']
-   */
-  readonly schemas?: string[];
-  /**
-   * The database to be granted
-   */
-  readonly databaseName?: string;
-  /**
    * Should this user be granted "writer" defaults or "reader" defaults?
    * @default false
    */
@@ -60,10 +51,8 @@ interface CreateUpdateProps {
   StackId: string;
 
   userSecretArn: string;
-  databaseName?: string;
   isWriter: boolean;
   proxyHost?: string;
-  schemas?: string[];
 }
 
 export interface SecretsResult {
@@ -100,6 +89,7 @@ export async function handler(
   context: awsLambda.Context,
   callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> {
+  console.log('Version 1 - split!');
   try {
     switch (event.RequestType) {
       case CfnRequestType.CREATE:
@@ -134,10 +124,8 @@ async function onCreate(
     ...event,
     ...context,
     userSecretArn: event.ResourceProperties.userSecretArn,
-    databaseName: event.ResourceProperties.databaseName,
     isWriter: event.ResourceProperties.isWriter === 'true',
     proxyHost: event.ResourceProperties.proxyHost,
-    schemas: event.ResourceProperties.schemas,
   });
 }
 
@@ -159,10 +147,8 @@ const onUpdate = async (
     ...event,
     ...context,
     userSecretArn: event.ResourceProperties.userSecretArn,
-    databaseName: event.ResourceProperties.databaseName,
     isWriter: event.ResourceProperties.isWriter === 'true',
     proxyHost: event.ResourceProperties.proxyHost,
-    schemas: event.ResourceProperties.schemas,
   });
 };
 
@@ -199,8 +185,6 @@ const onDelete = async (
  * @returns
  */
 export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.CloudFormationCustomResourceResponse> {
-  const schemas = props.schemas ?? [];
-
   const resultFactory = (p: ResultProps): awsLambda.CloudFormationCustomResourceResponse => {
     return {
       LogicalResourceId: props.LogicalResourceId,
@@ -243,7 +227,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
     console.log(`Connecting to database "postgres"`);
     client = new Client({
       ...secretResult.clientConfig,
-      database: 'postgres', // The grants below care which db we are in. But defaulting to postgres is fine if we just are handling users.
+      database: 'postgres', // Defaulting to postgres is fine since we just are handling users.
     });
     await client.connect();
   } catch (err) {
@@ -255,10 +239,11 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   }
 
   try {
-    await m.createUser(client, secretResult.username);
-    await m.conformPassword(client, secretResult.username, secretResult.password);
-    await m.createUser(client, usernameClone);
-    await m.conformPassword(client, usernameClone, secretResult.password);
+    const role = props.isWriter ? 'r_writer' : 'r_reader';
+    const userAndClone = [secretResult.username, usernameClone];
+    await Promise.all(userAndClone.map((u) => m.createUser(client, u)));
+    await Promise.all(userAndClone.map((u) => m.conformPassword(client, u, secretResult.password)));
+    await Promise.all(userAndClone.map((u) => m.grantRole(client, u, role)));
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
@@ -267,65 +252,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
     });
   }
 
-  // If we didn't get a databaseName, we're done.
-  if (!props.databaseName) {
-    console.log(`No databaseName specified. Skipping further grants.`);
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: 'No databaseName specified. Skipping further grants.',
-      Status: CfnStatus.SUCCESS,
-    });
-  }
-
   try {
-    await m.createDatabase(client, props.databaseName);
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: `Create database issue: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  try {
-    console.log(`Connecting to database "${props.databaseName}"`);
-    client = new Client({
-      ...secretResult.clientConfig,
-      database: props.databaseName, // The grants below care which db we are in.
-    });
-    await client.connect();
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: `client.connect failed: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  try {
-    await Promise.all(schemas.map((s) => m.createSchema(client, s)));
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: `Create schema issue: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  try {
-    await m.createRoles(client, props.databaseName, schemas);
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: `Create roles issue: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  try {
-    const role = props.isWriter ? 'r_writer' : 'r_reader';
-    await m.grantRole(client, secretResult.username, role);
-    await m.grantRole(client, usernameClone, role);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
@@ -442,75 +369,6 @@ export class Methods {
       username: userSecret.username,
       password: userSecret.password,
     };
-  }
-
-  /**
-   * Create the database, if it doesn't already exist.
-   * @param client
-   * @param databaseName
-   */
-  public async createDatabase(client: Client, databaseName: string): Promise<void> {
-    try {
-      // Does the db already exist?
-      const res = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', [databaseName]);
-      if (res.rowCount > 0) {
-        console.log(`Database ${databaseName} already exists.`);
-        return;
-      }
-      const sql = format('CREATE DATABASE %I', databaseName);
-      console.log(`Running: ${sql}`);
-      await client.query(sql);
-    } catch (err) {
-      console.log(`Error creating database ${databaseName}: ${err}`);
-    }
-  }
-
-  public async createSchema(client: Client, schemaName: string): Promise<void> {
-    try {
-      const sql = format(`CREATE SCHEMA IF NOT EXISTS %I`, schemaName);
-      console.log(`Running: ${sql}`);
-      await client.query(sql);
-    } catch (err) {
-      console.log(`Error creating schema ${schemaName}: ${err}`);
-    }
-  }
-
-  /**
-   * Creates r_reader and r_writer roles and grants them
-   * @param client
-   * @param databaseName
-   * @param schemas
-   */
-  public async createRoles(client: Client, databaseName: string, schemas: string[]): Promise<void> {
-    try {
-      ['r_reader', 'r_writer'].forEach(async (role) => {
-        const isWriter = role == 'r_writer';
-        const res = await client.query(`SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = $1`, [role]);
-        if (res.rowCount > 0) {
-          console.log(`Role ${role} already exists. Skipping creation.`);
-        } else {
-          const sql = format('CREATE ROLE %I NOINHERIT', role);
-          console.log(`Running: ${sql}`);
-          await client.query(sql);
-        }
-        [
-          format('GRANT CONNECT ON DATABASE %I TO %I', databaseName, role), // Usage on Database
-          ...schemas.map((s) => format('GRANT USAGE ON SCHEMA %I TO %I', s, role)), // Usage on Schema(s)
-          format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', role), // Defaults on sequences
-          format(
-            'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
-            isWriter ? ', INSERT, UPDATE, DELETE' : '',
-            role,
-          ), // Defaults on tables
-        ].forEach(async (sql) => {
-          console.log(`Running: ${sql}`);
-          await client.query(sql);
-        });
-      });
-    } catch (err) {
-      console.log(`Failed creating roles: ${JSON.stringify(err)}`);
-      throw err;
-    }
   }
 
   /**
