@@ -259,24 +259,6 @@ describe('postgres', () => {
     postgresStub.resetHistory();
   });
 
-  describe('createDatabase', () => {
-    it('skips if database already exists', async () => {
-      postgresStub.onFirstCall().resolves({ rowCount: 1 }); // 1 because db is found
-      await m.createDatabase(client, 'fakeDbName');
-      expect(postgresStub.callCount).toEqual(1); // only the check query, no query to create database
-      expect(postgresStub.firstCall.args[1]).toEqual(['fakeDbName']);
-    });
-
-    it('created database if it does not exist', async () => {
-      postgresStub.onFirstCall().resolves({ rowCount: 0 }); // 0 because db is not found
-      postgresStub.onSecondCall().resolves({ rowCount: 1 }); // 1 because db is created
-      await m.createDatabase(client, 'fakeDbName');
-      expect(postgresStub.callCount).toEqual(2);
-      expect(postgresStub.firstCall.args[1]).toEqual(['fakeDbName']);
-      expect(postgresStub.secondCall.args[0]).toEqual('CREATE DATABASE "fakeDbName"');
-    });
-  });
-
   describe('createUser', () => {
     it('skips if user already exists', async () => {
       postgresStub.onFirstCall().resolves({ rowCount: 1 }); // 1 because user is found
@@ -316,33 +298,19 @@ describe('postgres', () => {
     });
   });
 
-  describe('grantPrivileges', () => {
+  describe('grantRole', () => {
     it('grants for readers', async () => {
-      [...Array(4).keys()].forEach((n) => postgresStub.onCall(n).resolves({ rowCount: 0 }));
-      await m.grantPrivileges(client, 'fakeDbName', 'fakeUsername', false);
-      expect(postgresStub.callCount).toEqual(4);
-      expect(postgresStub.firstCall.args[0]).toEqual('GRANT CONNECT ON DATABASE "fakeDbName" TO "fakeUsername"');
-      expect(postgresStub.secondCall.args[0]).toEqual('GRANT USAGE ON SCHEMA public TO "fakeUsername"');
-      expect(postgresStub.thirdCall.args[0]).toEqual(
-        'ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO "fakeUsername"',
-      );
-      expect(postgresStub.getCall(3).args[0]).toEqual(
-        'ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO "fakeUsername"',
-      );
+      postgresStub.resolves();
+      await m.grantRole(client, 'fakeUsername', 'r_reader');
+      expect(postgresStub.callCount).toEqual(1);
+      expect(postgresStub.firstCall.args[0]).toEqual('GRANT "r_reader" TO "fakeUsername"');
     });
 
     it('grants for writers', async () => {
-      [...Array(4).keys()].forEach((n) => postgresStub.onCall(n).resolves({ rowCount: 0 }));
-      await m.grantPrivileges(client, 'fakeDbName', 'fakeUsername', true);
-      expect(postgresStub.callCount).toEqual(4);
-      expect(postgresStub.firstCall.args[0]).toEqual('GRANT CONNECT ON DATABASE "fakeDbName" TO "fakeUsername"');
-      expect(postgresStub.secondCall.args[0]).toEqual('GRANT USAGE ON SCHEMA public TO "fakeUsername"');
-      expect(postgresStub.thirdCall.args[0]).toEqual(
-        'ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO "fakeUsername"',
-      );
-      expect(postgresStub.getCall(3).args[0]).toEqual(
-        'ALTER DEFAULT PRIVILEGES GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "fakeUsername"',
-      );
+      postgresStub.resolves();
+      await m.grantRole(client, 'fakeUsername', 'r_writer');
+      expect(postgresStub.callCount).toEqual(1);
+      expect(postgresStub.firstCall.args[0]).toEqual('GRANT "r_writer" TO "fakeUsername"');
     });
 
     // it('logs on error', async () => {
