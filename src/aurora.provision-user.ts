@@ -252,15 +252,6 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
     });
   }
 
-  try {
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: `Grant issue: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
   return resultFactory({
     PhysicalResourceId: secretResult.username,
     ReasonPrefix: 'Success',

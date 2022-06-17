@@ -2,7 +2,7 @@ import AWSMock from 'aws-sdk-mock';
 import { Client } from 'pg';
 import sinon from 'sinon';
 
-import { Methods } from '../src/aurora.provisioner';
+import { Methods } from '../src/aurora.provision-user';
 
 sinon.stub(console, 'log');
 
