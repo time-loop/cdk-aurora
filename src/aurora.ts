@@ -221,7 +221,7 @@ export class Aurora extends Construct {
 
       const resource = new CustomResource(this, 'ActivityStream', {
         serviceToken: activityStreamProvider.serviceToken,
-        resourceType: 'Custom::RdsActivityStream',
+        resourceType: 'Custom::AuroraActivityStream',
         properties: {
           clusterId: this.cluster.clusterIdentifier,
           kmsKeyId: this.kmsKey.keyArn,

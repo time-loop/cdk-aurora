@@ -16,9 +16,10 @@ describe('Aurora', () => {
     it('creates resources', () => {
       ['AWS::RDS::DBCluster', 'AWS::RDS::DBProxy'].forEach((r) => template.resourceCountIs(r, 1));
       ['AWS::RDS::DBInstance'].forEach((r) => template.resourceCountIs(r, 2));
-      ['AWS::Lambda::Function', 'AWS::SecretsManager::RotationSchedule', 'AWS::SecretsManager::Secret'].forEach((r) =>
+      ['AWS::SecretsManager::RotationSchedule', 'AWS::SecretsManager::Secret'].forEach((r) =>
         template.resourceCountIs(r, 3),
       );
+      template.resourceCountIs('AWS::Lambda::Function', 5);
     });
     it('databaseName', () => {
       template.hasResourceProperties('AWS::RDS::DBCluster', {
@@ -62,8 +63,8 @@ describe('Aurora', () => {
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
       const a = new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc, activityStream: true });
       const template = assertions.Template.fromStack(stack);
-      template.resourceCountIs('AWS::Lambda::Function', 8);
-      template.resourceCountIs('Custom::RdsActivityStream', 1);
+      template.resourceCountIs('AWS::Lambda::Function', 10);
+      template.resourceCountIs('Custom::AuroraActivityStream', 1);
       expect(a.activityStreamArn).not.toBeFalsy();
     });
     it('instances', () => {
