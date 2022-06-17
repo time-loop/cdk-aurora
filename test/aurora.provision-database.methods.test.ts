@@ -1,6 +1,4 @@
-import { IgnoreStrategy } from 'aws-cdk-lib';
 import AWSMock from 'aws-sdk-mock';
-import exp from 'constants';
 import { Client } from 'pg';
 import sinon from 'sinon';
 

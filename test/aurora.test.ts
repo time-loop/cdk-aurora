@@ -3,13 +3,15 @@ import { Namer } from 'multi-convention-namer';
 
 import { Aurora } from '../src';
 
+const databaseName = 'fakeDbName';
+
 describe('Aurora', () => {
   describe('default', () => {
     const app = new App();
     const stack = new Stack(app, 'test');
     const kmsKey = new aws_kms.Key(stack, 'Key');
     const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-    new Aurora(stack, new Namer(['test']), { kmsKey, vpc });
+    new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc });
     const template = assertions.Template.fromStack(stack);
     it('creates resources', () => {
       ['AWS::RDS::DBCluster', 'AWS::RDS::DBProxy'].forEach((r) => template.resourceCountIs(r, 1));
@@ -17,6 +19,14 @@ describe('Aurora', () => {
       ['AWS::Lambda::Function', 'AWS::SecretsManager::RotationSchedule', 'AWS::SecretsManager::Secret'].forEach((r) =>
         template.resourceCountIs(r, 3),
       );
+    });
+    it('databaseName', () => {
+      template.hasResourceProperties('AWS::RDS::DBCluster', {
+        DatabaseName: assertions.Match.absent(), // we manage database creation via the custom resources
+      });
+      template.hasResourceProperties('Custom::AuroraDatabase', {
+        databaseName,
+      });
     });
     it('proxyName', () => {
       template.hasResourceProperties('AWS::RDS::DBProxy', { DBProxyName: 'Test' });
@@ -27,10 +37,10 @@ describe('Aurora', () => {
       });
     });
     it('provisions reader and writer', () => {
-      template.hasResourceProperties('Custom::RdsUser', {
+      template.hasResourceProperties('Custom::AuroraUser', {
         isWriter: false,
       });
-      template.hasResourceProperties('Custom::RdsUser', {
+      template.hasResourceProperties('Custom::AuroraUser', {
         isWriter: true,
       });
     });
@@ -50,25 +60,11 @@ describe('Aurora', () => {
       const stack = new Stack(app, 'test');
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      const a = new Aurora(stack, new Namer(['test']), { kmsKey, vpc, activityStream: true });
+      const a = new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc, activityStream: true });
       const template = assertions.Template.fromStack(stack);
       template.resourceCountIs('AWS::Lambda::Function', 8);
       template.resourceCountIs('Custom::RdsActivityStream', 1);
       expect(a.activityStreamArn).not.toBeFalsy();
-    });
-    it('databaseName', () => {
-      const app = new App();
-      const stack = new Stack(app, 'test');
-      const kmsKey = new aws_kms.Key(stack, 'Key');
-      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, databaseName: 'foo' });
-      const template = assertions.Template.fromStack(stack);
-      template.hasResourceProperties('AWS::RDS::DBCluster', {
-        DatabaseName: assertions.Match.absent(), // we manage database creation via the custom resources
-      });
-      template.hasResourceProperties('Custom::RdsUser', {
-        databaseName: 'foo',
-      });
     });
     it('instances', () => {
       const app = new App();
@@ -76,6 +72,7 @@ describe('Aurora', () => {
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
       new Aurora(stack, new Namer(['test']), {
+        databaseName,
         instances: 12,
         kmsKey,
         vpc,
@@ -89,6 +86,7 @@ describe('Aurora', () => {
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
       new Aurora(stack, new Namer(['test']), {
+        databaseName,
         instanceType: aws_ec2.InstanceType.of(aws_ec2.InstanceClass.R6G, aws_ec2.InstanceSize.XLARGE24),
         kmsKey,
         vpc,
@@ -104,6 +102,7 @@ describe('Aurora', () => {
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
       new Aurora(stack, new Namer(['test']), {
+        databaseName,
         instanceType: aws_ec2.InstanceType.of(aws_ec2.InstanceClass.R5, aws_ec2.InstanceSize.XLARGE24),
         kmsKey,
         vpc,
@@ -137,7 +136,7 @@ describe('Aurora', () => {
       const stack = new Stack(app, 'test');
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, retention: Duration.days(30) });
+      new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc, retention: Duration.days(30) });
       const template = assertions.Template.fromStack(stack);
       template.hasResourceProperties('AWS::RDS::DBCluster', {
         BackupRetentionPeriod: 30,
@@ -148,7 +147,7 @@ describe('Aurora', () => {
       const stack = new Stack(app, 'test');
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, skipAddRotationMultiUser: true });
+      new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc, skipAddRotationMultiUser: true });
       const template = assertions.Template.fromStack(stack);
       ['AWS::SecretsManager::Secret'].forEach((r) => template.resourceCountIs(r, 3)); // Still have 3 users
       ['AWS::SecretsManager::RotationSchedule'].forEach((r) => template.resourceCountIs(r, 1)); // Only manager is rotated
@@ -158,7 +157,7 @@ describe('Aurora', () => {
       const stack = new Stack(app, 'test');
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, skipProxy: true });
+      new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc, skipProxy: true });
       const template = assertions.Template.fromStack(stack);
       template.resourceCountIs('AWS::RDS::DBProxy', 0);
     });
@@ -167,7 +166,7 @@ describe('Aurora', () => {
       const stack = new Stack(app, 'test');
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { kmsKey, vpc, skipUserProvisioning: true });
+      new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc, skipUserProvisioning: true });
       const template = assertions.Template.fromStack(stack);
       template.resourceCountIs('Custom::RdsUser', 0);
     });
