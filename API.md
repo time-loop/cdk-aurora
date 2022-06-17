@@ -221,6 +221,7 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.retention">retention</a></code> | <code>aws-cdk-lib.Duration</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.schemas">schemas</a></code> | <code>string[]</code> | Schemas to create and grant defaults for users. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipAddRotationMultiUser">skipAddRotationMultiUser</a></code> | <code>boolean</code> | When bootstrapping, hold off on creating the `addRotationMultiUser`. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProvisionDatabase">skipProvisionDatabase</a></code> | <code>boolean</code> | Skip provisioning the database? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProxy">skipProxy</a></code> | <code>boolean</code> | By default, we provide a proxy for non-manager users. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipUserProvisioning">skipUserProvisioning</a></code> | <code>boolean</code> | When bootstrapping, hold off on provisioning users in the database. |
 
@@ -353,6 +354,19 @@ When bootstrapping, hold off on creating the `addRotationMultiUser`.
 
 NOTE: the multiUser strategy relies on a `_clone` user, which is potentially surprising.
 See https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotating-secrets_strategies.html#rotating-secrets-two-users
+
+---
+
+##### `skipProvisionDatabase`<sup>Optional</sup> <a name="skipProvisionDatabase" id="@time-loop/cdk-aurora.AuroraProps.property.skipProvisionDatabase"></a>
+
+```typescript
+public readonly skipProvisionDatabase: boolean;
+```
+
+- *Type:* boolean
+- *Default:* false
+
+Skip provisioning the database?
 
 ---
 

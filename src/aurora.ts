@@ -16,7 +16,7 @@ import {
   RemovalPolicy,
   Stack,
 } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
+import { Construct, IDependable } from 'constructs';
 import { Namer } from 'multi-convention-namer';
 
 import {} from './aurora.provision-database';
@@ -72,6 +72,12 @@ export interface AuroraProps {
    * @default false
    */
   readonly skipAddRotationMultiUser?: boolean;
+  /**
+   * Skip provisioning the database?
+   *
+   * @default false
+   */
+  readonly skipProvisionDatabase?: boolean;
   /**
    * When bootstrapping, hold off on provisioning users in the database.
    *
@@ -268,14 +274,18 @@ export class Aurora extends Construct {
       onEventHandler: databaseProvisioner,
     });
 
-    const provisionedDatabase = new CustomResource(this, 'DatabaseProvisioner', {
-      properties: {
-        databaseName: props.databaseName,
-        schemas,
-      },
-      resourceType: 'Custom::AuroraDatabase',
-      serviceToken: databaseProvider.serviceToken,
-    });
+    const userDependencies: IDependable[] = [];
+    if (!props.skipProvisionDatabase) {
+      const provisionedDatabase = new CustomResource(this, 'DatabaseProvisioner', {
+        properties: {
+          databaseName: props.databaseName,
+          schemas,
+        },
+        resourceType: 'Custom::AuroraDatabase',
+        serviceToken: databaseProvider.serviceToken,
+      });
+      userDependencies.push(provisionedDatabase);
+    }
 
     // Deploy user provisioner custom resource
     // See: https://github.com/aws/aws-cdk/issues/19794 for details.
@@ -303,7 +313,7 @@ export class Aurora extends Construct {
         properties,
         serviceToken: userProvider.serviceToken,
       });
-      provisionedUser.node.addDependency(provisionedDatabase); // We depend on the roles.
+      provisionedUser.node.addDependency(...userDependencies); // We depend on the roles.
       return provisionedUser;
     };
 
