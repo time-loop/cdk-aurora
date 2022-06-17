@@ -268,7 +268,7 @@ export class Aurora extends Construct {
       onEventHandler: databaseProvisioner,
     });
 
-    new CustomResource(this, 'DatabaseProvisioner', {
+    const provisionedDatabase = new CustomResource(this, 'DatabaseProvisioner', {
       properties: {
         databaseName: props.databaseName,
         schemas,
@@ -297,12 +297,15 @@ export class Aurora extends Construct {
       onEventHandler: userProvisioner,
     });
 
-    const rdsUserProvisioner = (provisionerId: Namer, properties: RdsUserProvisionerProps) =>
-      new CustomResource(this, provisionerId.addSuffix(['creator']).pascal, {
+    const rdsUserProvisioner = (provisionerId: Namer, properties: RdsUserProvisionerProps) => {
+      const provisionedUser = new CustomResource(this, provisionerId.addSuffix(['creator']).pascal, {
         resourceType: 'Custom::AuroraUser',
         properties,
         serviceToken: userProvider.serviceToken,
       });
+      provisionedUser.node.addDependency(provisionedDatabase); // We depend on the roles.
+      return provisionedUser;
+    };
 
     // User management
     // TODO: support arbitrary reader and writer users
