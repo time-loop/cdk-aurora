@@ -256,7 +256,7 @@ describe('postgres', () => {
   const postgresStub = sinon.stub(Client.prototype, 'query');
   const client = new Client();
   beforeEach(() => {
-    postgresStub.resetHistory();
+    postgresStub.reset();
   });
 
   describe('createUser', () => {
@@ -303,14 +303,14 @@ describe('postgres', () => {
       postgresStub.resolves();
       await m.grantRole(client, 'fakeUsername', 'r_reader');
       expect(postgresStub.callCount).toEqual(1);
-      expect(postgresStub.firstCall.args[0]).toEqual('GRANT "r_reader" TO "fakeUsername"');
+      expect(postgresStub.firstCall.args[0]).toEqual('GRANT r_reader TO "fakeUsername"');
     });
 
     it('grants for writers', async () => {
       postgresStub.resolves();
       await m.grantRole(client, 'fakeUsername', 'r_writer');
       expect(postgresStub.callCount).toEqual(1);
-      expect(postgresStub.firstCall.args[0]).toEqual('GRANT "r_writer" TO "fakeUsername"');
+      expect(postgresStub.firstCall.args[0]).toEqual('GRANT r_writer TO "fakeUsername"');
     });
 
     // it('logs on error', async () => {
