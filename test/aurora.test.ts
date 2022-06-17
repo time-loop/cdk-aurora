@@ -143,6 +143,7 @@ describe('Aurora', () => {
         BackupRetentionPeriod: 30,
       });
     });
+    it.todo('skipProvisionDatabase');
     it('skipAddRotationMultiUser', () => {
       const app = new App();
       const stack = new Stack(app, 'test');
