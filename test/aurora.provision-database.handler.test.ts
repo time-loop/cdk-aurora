@@ -114,10 +114,10 @@ describe('handler', () => {
       });
     });
 
-    it('handles error from postgres', async () => {
+    it('handles error on initial connect to postgres', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.rejects(new Error('whoopsie'));
+      postgresStub.onFirstCall().rejects(new Error('whoopsie'));
       const r = await handler(createEvent, context, callback);
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
@@ -132,7 +132,7 @@ describe('handler', () => {
     it('handles error from createDatabase', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.resolves();
+      postgresStub.onFirstCall().resolves();
       createRoleStub.resolves();
       createDatabaseStub.rejects(new Error('whoopsie'));
       const r = await handler(createEvent, context, callback);
@@ -279,10 +279,10 @@ describe('handler', () => {
       });
     });
 
-    it('handles error from postgres', async () => {
+    it('handles error on initial connect to postgres', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.rejects(new Error('whoopsie'));
+      postgresStub.onFirstCall().rejects(new Error('whoopsie'));
       const r = await handler(updateEvent, context, callback);
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
@@ -297,7 +297,7 @@ describe('handler', () => {
     it('handles error from createDatabase', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.resolves();
+      postgresStub.onFirstCall().resolves();
       createRoleStub.resolves();
       createDatabaseStub.rejects(new Error('whoopsie'));
       const r = await handler(updateEvent, context, callback);
