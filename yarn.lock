@@ -4740,10 +4740,10 @@ ms@^2.0.0, ms@^2.1.1:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-multi-convention-namer@0.1.11:
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/multi-convention-namer/-/multi-convention-namer-0.1.11.tgz#697b47213fc220c11c42b317e4e614bed4fb5989"
-  integrity sha512-/Wa5VIpnk/C+FsgC8WzmMen0xfjnZ0AxHMWmqOzG40/A/jY0ZkL+s9ufrAC/pmwzNLSQ26eVRxIrAm71cd8A+A==
+multi-convention-namer@0.1.12:
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/multi-convention-namer/-/multi-convention-namer-0.1.12.tgz#386aa3194a82c91c968ca727a6d83a9f6bb13caa"
+  integrity sha512-yNE7N3vGfLL/2atbDdtNkI3HvVc40QNBPqSzYLDFr8nQwEpehZL6AKYAyQ0rQPvJr53eb3t0/Ke43YK/PJoYvw==
 
 natural-compare@^1.4.0:
   version "1.4.0"

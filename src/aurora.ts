@@ -19,7 +19,8 @@ import {
 import { Construct } from 'constructs';
 import { Namer } from 'multi-convention-namer';
 
-import { RdsUserProvisionerProps } from './aurora.provisioner';
+import {} from './aurora.provision-database';
+import { RdsUserProvisionerProps } from './aurora.provision-user';
 import { clusterArn } from './helpers';
 
 const passwordRotationVersion = '1.1.217';
@@ -31,11 +32,10 @@ export interface AuroraProps {
    */
   readonly activityStream?: boolean;
   /**
-   * Would you like a database created?
+   * Name the database you would like a database created.
    * This also will target which database has default grants applied for users.
-   * If you skip this, you will need to create your database and grant the users manually.
    */
-  readonly databaseName?: string;
+  readonly databaseName: string;
   /**
    * How many instances? DevOps strongly recommends at least 3 in prod environments and only 1 in dev environments.
    * @default - passthrough
@@ -61,8 +61,14 @@ export interface AuroraProps {
    */
   readonly retention?: Duration;
   /**
+   * Schemas to create and grant defaults for users.
+   * @default ['public']
+   */
+  readonly schemas?: string[];
+  /**
    * When bootstrapping, hold off on creating the `addRotationMultiUser`.
-   *
+   * NOTE: the multiUser strategy relies on a `_clone` user, which is potentially surprising.
+   * See https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotating-secrets_strategies.html#rotating-secrets-two-users
    * @default false
    */
   readonly skipAddRotationMultiUser?: boolean;
@@ -122,6 +128,8 @@ export class Aurora extends Construct {
 
   constructor(scope: Construct, id: Namer, props: AuroraProps) {
     super(scope, id.pascal);
+
+    const schemas = props.schemas ?? ['public'];
 
     const encryptionKey = (this.kmsKey = props.kmsKey);
     const instanceType =
@@ -213,7 +221,7 @@ export class Aurora extends Construct {
 
       const resource = new CustomResource(this, 'ActivityStream', {
         serviceToken: activityStreamProvider.serviceToken,
-        resourceType: 'Custom::RdsActivityStream',
+        resourceType: 'Custom::AuroraActivityStream',
         properties: {
           clusterId: this.cluster.clusterIdentifier,
           kmsKeyId: this.kmsKey.keyArn,
@@ -228,9 +236,7 @@ export class Aurora extends Construct {
     const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
     managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
 
-    // Deploy user provisioner custom resource
-    // See: https://github.com/aws/aws-cdk/issues/19794 for details.
-    const provisioner = new aws_lambda_nodejs.NodejsFunction(this, 'provisioner', {
+    const provisionerProps: aws_lambda_nodejs.NodejsFunctionProps = {
       bundling: {
         externalModules: ['aws-lambda', 'aws-sdk'], // Lambda is just types. SDK is explicitly provided.
         minify: true,
@@ -242,7 +248,9 @@ export class Aurora extends Construct {
       logRetention: aws_logs.RetentionDays.ONE_WEEK,
       tracing: aws_lambda.Tracing.ACTIVE,
       vpc: props.vpc,
-    });
+    };
+
+    const databaseProvisioner = new aws_lambda_nodejs.NodejsFunction(this, 'provision-database', provisionerProps);
     [
       new aws_iam.PolicyStatement({
         actions: ['DescribeSecret', 'GetSecretValue', 'ListSecretVersionIds'].map((s) => `secretsmanager:${s}`),
@@ -252,22 +260,55 @@ export class Aurora extends Construct {
         actions: ['Decrypt', 'Describe*', 'Generate*', 'List*'].map((s) => `kms:${s}`),
         resources: [this.kmsKey.keyArn],
       }),
-    ].forEach((s) => provisioner.addToRolePolicy(s));
-    this.cluster.connections.allowDefaultPortFrom(provisioner, 'User provisioning lambda');
+    ].forEach((s) => databaseProvisioner.addToRolePolicy(s));
+    this.cluster.connections.allowDefaultPortFrom(databaseProvisioner, 'Database provisioning lambda');
 
-    const provider = new custom_resources.Provider(this, 'provider', {
+    const databaseProvider = new custom_resources.Provider(this, 'DatabaseProvider', {
       logRetention: aws_logs.RetentionDays.ONE_WEEK,
-      onEventHandler: provisioner,
+      onEventHandler: databaseProvisioner,
     });
 
-    const rdsUserProvisioner = (provisionerId: Namer, properties: RdsUserProvisionerProps) =>
-      new CustomResource(this, provisionerId.addSuffix(['creator']).pascal, {
-        resourceType: 'Custom::RdsUser',
+    const provisionedDatabase = new CustomResource(this, 'DatabaseProvisioner', {
+      properties: {
+        databaseName: props.databaseName,
+        schemas,
+      },
+      resourceType: 'Custom::AuroraDatabase',
+      serviceToken: databaseProvider.serviceToken,
+    });
+
+    // Deploy user provisioner custom resource
+    // See: https://github.com/aws/aws-cdk/issues/19794 for details.
+    const userProvisioner = new aws_lambda_nodejs.NodejsFunction(this, 'provision-user', provisionerProps);
+    [
+      new aws_iam.PolicyStatement({
+        actions: ['DescribeSecret', 'GetSecretValue', 'ListSecretVersionIds'].map((s) => `secretsmanager:${s}`),
+        resources: [this.cluster.secret!.secretArn],
+      }),
+      new aws_iam.PolicyStatement({
+        actions: ['Decrypt', 'Describe*', 'Generate*', 'List*'].map((s) => `kms:${s}`),
+        resources: [this.kmsKey.keyArn],
+      }),
+    ].forEach((s) => userProvisioner.addToRolePolicy(s));
+    this.cluster.connections.allowDefaultPortFrom(userProvisioner, 'User provisioning lambda');
+
+    const userProvider = new custom_resources.Provider(this, 'UserProvider', {
+      logRetention: aws_logs.RetentionDays.ONE_WEEK,
+      onEventHandler: userProvisioner,
+    });
+
+    const rdsUserProvisioner = (provisionerId: Namer, properties: RdsUserProvisionerProps) => {
+      const provisionedUser = new CustomResource(this, provisionerId.addSuffix(['creator']).pascal, {
+        resourceType: 'Custom::AuroraUser',
         properties,
-        serviceToken: provider.serviceToken,
+        serviceToken: userProvider.serviceToken,
       });
+      provisionedUser.node.addDependency(provisionedDatabase); // We depend on the roles.
+      return provisionedUser;
+    };
 
     // User management
+    // TODO: support arbitrary reader and writer users
     const secrets = ['reader', 'writer'].map((userStr) => {
       const user = new Namer([userStr]);
       const username = id.addSuffix(user).snake;
@@ -277,8 +318,9 @@ export class Aurora extends Construct {
         secretName: id.addSuffix(user).pascal,
         masterSecret: this.cluster.secret,
       });
+      secret.attach(this.cluster); // This inserts the DB info into the secret
 
-      provisioner.addToRolePolicy(
+      userProvisioner.addToRolePolicy(
         new aws_iam.PolicyStatement({
           actions: ['DescribeSecret', 'GetSecretValue', 'ListSecretVersionIds', 'PutSecretValue'].map(
             (s) => `secretsmanager:${s}`,
@@ -295,6 +337,7 @@ export class Aurora extends Construct {
       }
       return { userStr, secret };
     });
+
     this.secrets = secrets.map((s) => s.secret);
 
     if (!props.skipProxy) {
@@ -314,7 +357,6 @@ export class Aurora extends Construct {
     if (!props.skipUserProvisioning) {
       secrets.map((s) => {
         const rdsUser = rdsUserProvisioner(new Namer([s.userStr]), {
-          databaseName: props.databaseName,
           isWriter: s.userStr === 'writer',
           proxyHost: this.proxy?.endpoint,
           userSecretArn: s.secret.secretArn,

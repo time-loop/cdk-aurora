@@ -63,7 +63,7 @@
     "jsii-pacmak": "^1.57.0",
     "jsii-release": "^0.2.341",
     "json-schema": "^0.4.0",
-    "multi-convention-namer": "0.1.11",
+    "multi-convention-namer": "0.1.12",
     "npm-check-updates": "^12",
     "prettier": "^2.6.2",
     "projen": "^0.54.14",
@@ -76,7 +76,7 @@
   "peerDependencies": {
     "aws-cdk-lib": "^2.13.0",
     "constructs": "^10.0.5",
-    "multi-convention-namer": "^0.1.11"
+    "multi-convention-namer": "^0.1.12"
   },
   "dependencies": {
     "aws-lambda": "^1.0.7",

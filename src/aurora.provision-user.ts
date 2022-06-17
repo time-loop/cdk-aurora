@@ -13,10 +13,6 @@ export interface RdsUserProvisionerProps {
    */
   readonly userSecretArn: string;
   /**
-   * The database to be granted
-   */
-  readonly databaseName?: string;
-  /**
    * Should this user be granted "writer" defaults or "reader" defaults?
    * @default false
    */
@@ -55,7 +51,6 @@ interface CreateUpdateProps {
   StackId: string;
 
   userSecretArn: string;
-  databaseName?: string;
   isWriter: boolean;
   proxyHost?: string;
 }
@@ -94,6 +89,7 @@ export async function handler(
   context: awsLambda.Context,
   callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> {
+  console.log('Version 1 - split!');
   try {
     switch (event.RequestType) {
       case CfnRequestType.CREATE:
@@ -124,12 +120,13 @@ async function onCreate(
   _callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> {
   console.log(`onCreate event: ${JSON.stringify(event)}`);
-  const userSecretArn = event.ResourceProperties.userSecretArn;
-  const databaseName = event.ResourceProperties.databaseName;
-  const isWriter = event.ResourceProperties.isWriter === 'true';
-  const proxyHost = event.ResourceProperties.proxyHost;
-
-  return createUpdate({ ...event, ...context, userSecretArn, databaseName: databaseName, isWriter, proxyHost });
+  return createUpdate({
+    ...event,
+    ...context,
+    userSecretArn: event.ResourceProperties.userSecretArn,
+    isWriter: event.ResourceProperties.isWriter === 'true',
+    proxyHost: event.ResourceProperties.proxyHost,
+  });
 }
 
 /**
@@ -146,12 +143,13 @@ const onUpdate = async (
   _callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> => {
   console.log(`onUpdate event: ${JSON.stringify(event)}`);
-  const userSecretArn = event.ResourceProperties.userSecretArn;
-  const databaseName = event.ResourceProperties.databaseName;
-  const isWriter = event.ResourceProperties.isWriter === 'true';
-  const proxyHost = event.ResourceProperties.proxyHost;
-
-  return createUpdate({ ...event, ...context, userSecretArn, databaseName: databaseName, isWriter, proxyHost });
+  return createUpdate({
+    ...event,
+    ...context,
+    userSecretArn: event.ResourceProperties.userSecretArn,
+    isWriter: event.ResourceProperties.isWriter === 'true',
+    proxyHost: event.ResourceProperties.proxyHost,
+  });
 };
 
 /**
@@ -222,13 +220,14 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
       Status: CfnStatus.FAILED,
     });
   }
+  const usernameClone = secretResult.username + '_clone';
 
   let client: Client;
   try {
     console.log(`Connecting to database "postgres"`);
     client = new Client({
       ...secretResult.clientConfig,
-      database: 'postgres', // The grants below care which db we are in. But defaulting to postgres is fine if we just are handling users.
+      database: 'postgres', // Defaulting to postgres is fine since we just are handling users.
     });
     await client.connect();
   } catch (err) {
@@ -240,57 +239,15 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   }
 
   try {
-    await m.createUser(client, secretResult.username);
-    await m.conformPassword(client, secretResult.username, secretResult.password);
+    const role = props.isWriter ? 'r_writer' : 'r_reader';
+    const userAndClone = [secretResult.username, usernameClone];
+    await Promise.all(userAndClone.map((u) => m.createUser(client, u)));
+    await Promise.all(userAndClone.map((u) => m.conformPassword(client, u, secretResult.password)));
+    await Promise.all(userAndClone.map((u) => m.grantRole(client, u, role)));
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: secretResult.username,
       ReasonPrefix: `Create / conform issue: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  // If we didn't get a databaseName, we're done.
-  if (!props.databaseName) {
-    console.log(`No databaseName specified. Skipping further grants.`);
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: 'No databaseName specified. Skipping further grants.',
-      Status: CfnStatus.SUCCESS,
-    });
-  }
-
-  try {
-    await m.createDatabase(client, props.databaseName);
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: `Create database issue: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  try {
-    console.log(`Connecting to database "${props.databaseName}"`);
-    client = new Client({
-      ...secretResult.clientConfig,
-      database: props.databaseName, // The grants below care which db we are in.
-    });
-    await client.connect();
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: `client.connect failed: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
-  try {
-    await m.grantPrivileges(client, props.databaseName, secretResult.username, props.isWriter);
-  } catch (err) {
-    return resultFactory({
-      PhysicalResourceId: secretResult.username,
-      ReasonPrefix: `Grant issue: ${err}`,
       Status: CfnStatus.FAILED,
     });
   }
@@ -311,6 +268,9 @@ export class Methods {
   /**
    * Fetch secrets from SecretsManager and conform the user secret
    * by adding a host and engine, as necessary.
+   * The vast majority of this stuff should be handled by the
+   * `secret.attach(cluster)` call in the stack.
+   * But... I wrote this before I knew about the `attach()` method.
    * @param managerSecretArn
    * @param userSecretArn
    * @param proxyHost
@@ -403,27 +363,6 @@ export class Methods {
   }
 
   /**
-   * Create the database, if it doesn't already exist.
-   * @param client
-   * @param databaseName
-   */
-  public async createDatabase(client: Client, databaseName: string): Promise<void> {
-    try {
-      // Does the db already exist?
-      const res = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', [databaseName]);
-      if (res.rowCount > 0) {
-        console.log(`Database ${databaseName} already exists.`);
-        return;
-      }
-      const sql = format('CREATE DATABASE %I', databaseName);
-      console.log(`Running: ${sql}`);
-      await client.query(sql);
-    } catch (err) {
-      console.log(`Error creating database ${databaseName}: ${err}`);
-    }
-  }
-
-  /**
    * Does the user already exist? If not, create them.
    * @param client
    * @param username
@@ -465,32 +404,17 @@ export class Methods {
   /**
    * Grant privileges to the user.
    * @param client
-   * @param databaseName what database to grant privileges to
+   * @param databaseName what database to grant privileges in
    * @param username
-   * @param isWriter whether or not to grant write privileges
+   * @param role which role to grant
    */
-  public async grantPrivileges(
-    client: Client,
-    databaseName: string,
-    username: string,
-    isWriter: boolean,
-  ): Promise<void> {
+  public async grantRole(client: Client, username: string, role: string): Promise<void> {
     try {
-      [
-        format('GRANT CONNECT ON DATABASE %I TO %I', databaseName, username), // Usage on Database
-        format('GRANT USAGE ON SCHEMA %I TO %I', 'public', username), // Usage on Schema
-        format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', username), // Defaults on sequences
-        format(
-          'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
-          isWriter ? ', INSERT, UPDATE, DELETE' : '',
-          username,
-        ), // Defaults on tables
-      ].forEach(async (sql) => {
-        console.log(`Running: ${sql}`);
-        await client.query(sql);
-      });
+      const sql = format('GRANT %I TO %I', role, username);
+      console.log(`Running: ${sql}`);
+      await client.query(sql);
     } catch (err) {
-      console.log(`Failed granting privileges to ${username}: ${JSON.stringify(err)}`);
+      console.log(`Failed granting ${role} to ${username}: ${JSON.stringify(err)}`);
       throw err;
     }
   }
