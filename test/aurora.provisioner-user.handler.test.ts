@@ -180,14 +180,6 @@ describe('handler', () => {
     });
 
     it('succeeds', async () => {
-      const createEvent: CloudFormationCustomResourceCreateEvent = {
-        ...eventBase,
-        RequestType: 'Create',
-        ResourceProperties: {
-          ...resourcePropertiesBase,
-          databaseName: 'fakeDbName',
-        },
-      };
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchAndConformSecretsStub.resolves(standardSecretResult);
       postgresStub.resolves();
