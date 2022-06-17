@@ -245,6 +245,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
 
   try {
     await Promise.all(schemas.map((s) => m.createSchema(client, s)));
+    // TODO: I need a way to catch these errors.
   } catch (err) {
     return resultFactory({
       ReasonPrefix: `Create schema issue: ${err}`,
@@ -254,6 +255,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
 
   try {
     await Promise.all(roles.map((role) => m.configureRole(client, props.databaseName, role, schemas)));
+    // TODO: I need a way to catch these errors.
   } catch (err) {
     return resultFactory({
       ReasonPrefix: `Configure role issue: ${err}`,
