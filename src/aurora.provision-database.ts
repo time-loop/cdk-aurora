@@ -301,10 +301,9 @@ export class Methods {
   }
 
   /**
-   * Creates r_reader and r_writer roles and grants them
+   * Creates r_reader and r_writer roles and normalize their defaults.
    * @param client
    * @param databaseName
-   * @param schemas
    */
   public async createRole(client: Client, role: string): Promise<void> {
     try {
@@ -312,10 +311,13 @@ export class Methods {
       if (res.rowCount > 0) {
         console.log(`Role ${role} already exists. Skipping creation.`);
       } else {
-        const sql = format('CREATE ROLE %I NOINHERIT', role);
+        const sql = format('CREATE ROLE %I', role);
         console.log(`Running: ${sql}`);
         await client.query(sql);
       }
+      const sql = format(`ALTER ROLE %I NOBYPASSRLS NOCREATEDB NOCREATEROLE NOLOGIN INHERIT`, role);
+      console.log(`Running: ${sql}`);
+      await client.query(sql);
     } catch (err) {
       console.log(`Failed creating roles: ${JSON.stringify(err)}`);
       throw err;

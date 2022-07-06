@@ -374,10 +374,13 @@ export class Methods {
       if (res.rowCount > 0) {
         console.log(`User ${username} already exists. Skipping creation.`);
       } else {
-        const sql = format('CREATE USER %I NOINHERIT PASSWORD NULL', username);
+        const sql = format('CREATE USER %I PASSWORD NULL', username);
         console.log(`Running: ${sql}`);
         await client.query(sql);
       }
+      const sql = format(`ALTER ROLE %I NOBYPASSRLS NOCREATEDB NOCREATEROLE INHERIT`, username);
+      console.log(`Running: ${sql}`);
+      await client.query(sql);
     } catch (err) {
       console.log(`Failed creating ${username}: ${JSON.stringify(err)}`);
       throw err;
