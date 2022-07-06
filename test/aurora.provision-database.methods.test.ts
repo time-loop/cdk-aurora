@@ -54,7 +54,9 @@ describe('postgres', () => {
       await m.createRole(client, 'fakeRoleName');
       expect(postgresStub.callCount).toEqual(2); // only the check query, and conform
       expect(postgresStub.firstCall.args[1]).toEqual(['fakeRoleName']);
-      expect(postgresStub.secondCall.args[0]).toEqual('ALTER ROLE "fakeRoleName" NOBYPASSRLS NOCREATEDB NOCREATEROLE NOLOGIN INHERIT');
+      expect(postgresStub.secondCall.args[0]).toEqual(
+        'ALTER ROLE "fakeRoleName" NOBYPASSRLS NOCREATEDB NOCREATEROLE NOLOGIN INHERIT',
+      );
     });
 
     it('creates role if it does not exist', async () => {
@@ -65,7 +67,9 @@ describe('postgres', () => {
       expect(postgresStub.callCount).toEqual(3);
       expect(postgresStub.firstCall.args[1]).toEqual(['fakeRoleName']);
       expect(postgresStub.secondCall.args[0]).toEqual('CREATE ROLE "fakeRoleName"');
-      expect(postgresStub.thirdCall.args[0]).toEqual('ALTER ROLE "fakeRoleName" NOBYPASSRLS NOCREATEDB NOCREATEROLE NOLOGIN INHERIT');
+      expect(postgresStub.thirdCall.args[0]).toEqual(
+        'ALTER ROLE "fakeRoleName" NOBYPASSRLS NOCREATEDB NOCREATEROLE NOLOGIN INHERIT',
+      );
     });
   });
 
@@ -117,19 +121,19 @@ describe('postgres', () => {
       statements.forEach((value, index) => expect(postgresStub.getCall(index).args[0]).toEqual(value));
     });
 
-  it('grants for readers', async () => {
-    [...Array(4).keys()].forEach((n) => postgresStub.onCall(n).resolves({ rowCount: 0 }));
-    await m.configureRole(client, 'fakeDbName', 'r_reader', ['fakeSchema1', 'fakeSchema2']);
-    const statements = [
-      'GRANT CONNECT ON DATABASE "fakeDbName" TO r_reader',
-      'GRANT USAGE ON SCHEMA "fakeSchema1" TO r_reader',
-      'GRANT USAGE ON SCHEMA "fakeSchema2" TO r_reader',
-      'ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO r_reader',
-      'ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO r_reader',
-    ];
-    expect(postgresStub.callCount).toEqual(statements.length);
-    statements.forEach((value, index) => expect(postgresStub.getCall(index).args[0]).toEqual(value));
-  });
+    it('grants for readers', async () => {
+      [...Array(4).keys()].forEach((n) => postgresStub.onCall(n).resolves({ rowCount: 0 }));
+      await m.configureRole(client, 'fakeDbName', 'r_reader', ['fakeSchema1', 'fakeSchema2']);
+      const statements = [
+        'GRANT CONNECT ON DATABASE "fakeDbName" TO r_reader',
+        'GRANT USAGE ON SCHEMA "fakeSchema1" TO r_reader',
+        'GRANT USAGE ON SCHEMA "fakeSchema2" TO r_reader',
+        'ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO r_reader',
+        'ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO r_reader',
+      ];
+      expect(postgresStub.callCount).toEqual(statements.length);
+      statements.forEach((value, index) => expect(postgresStub.getCall(index).args[0]).toEqual(value));
+    });
 
     // it('logs on error', async () => {
     //   postgresStub.onFirstCall().rejects(new Error('whoopsie'));
