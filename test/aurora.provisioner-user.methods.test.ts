@@ -262,18 +262,22 @@ describe('postgres', () => {
   describe('createUser', () => {
     it('skips if user already exists', async () => {
       postgresStub.onFirstCall().resolves({ rowCount: 1 }); // 1 because user is found
+      postgresStub.onSecondCall().resolves({ rowCount: 0 });
       await m.createUser(client, 'fakeUsername');
-      expect(postgresStub.callCount).toEqual(1); // only the check query, no query to create user
+      expect(postgresStub.callCount).toEqual(2); // only the check query, no query to create user, then conform
       expect(postgresStub.firstCall.args[1]).toEqual(['fakeUsername']);
+      expect(postgresStub.secondCall.args[0]).toEqual('ALTER ROLE "fakeUsername" NOBYPASSRLS NOCREATEDB NOCREATEROLE INHERIT');
     });
 
     it('creates user if user does not exist', async () => {
       postgresStub.onFirstCall().resolves({ rowCount: 0 }); // 0 because user is not found
       postgresStub.onSecondCall().resolves({ rowCount: 0 });
+      postgresStub.onThirdCall().resolves({ rowCount: 0 });
       await m.createUser(client, 'fakeUsername');
-      expect(postgresStub.callCount).toEqual(2); // check query and create user query
+      expect(postgresStub.callCount).toEqual(3); // check query and create user query
       expect(postgresStub.firstCall.args[1]).toEqual(['fakeUsername']);
-      expect(postgresStub.secondCall.args[0]).toEqual('CREATE USER "fakeUsername" NOINHERIT PASSWORD NULL');
+      expect(postgresStub.secondCall.args[0]).toEqual('CREATE USER "fakeUsername" PASSWORD NULL');
+      expect(postgresStub.thirdCall.args[0]).toEqual('ALTER ROLE "fakeUsername" NOBYPASSRLS NOCREATEDB NOCREATEROLE INHERIT');
     });
 
     it('logs on error', async () => {
