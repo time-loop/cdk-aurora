@@ -61,6 +61,11 @@ export interface AuroraProps {
    */
   readonly retention?: Duration;
   /**
+   * Security group to use for the Aurora cluster.
+   * @default - create a new security group
+   */
+  readonly securityGroup?: aws_ec2.ISecurityGroup;
+  /**
    * Schemas to create and grant defaults for users.
    * @default ['public']
    */
@@ -148,10 +153,14 @@ export class Aurora extends Construct {
 
     const secretName = id.addSuffix(['manager']);
 
-    this.securityGroup = new aws_ec2.SecurityGroup(this, 'SecurityGroup', {
-      vpc: props.vpc,
-      allowAllOutbound: true,
-    });
+    if (props.securityGroup) {
+      this.securityGroup = props.securityGroup;
+    } else {
+      this.securityGroup = new aws_ec2.SecurityGroup(this, 'SecurityGroup', {
+        vpc: props.vpc,
+        allowAllOutbound: true,
+      });
+    }
 
     this.cluster = new aws_rds.DatabaseCluster(this, 'Database', {
       backup: {
