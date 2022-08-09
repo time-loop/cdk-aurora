@@ -220,6 +220,7 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.removalPolicy">removalPolicy</a></code> | <code>aws-cdk-lib.RemovalPolicy</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.retention">retention</a></code> | <code>aws-cdk-lib.Duration</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.schemas">schemas</a></code> | <code>string[]</code> | Schemas to create and grant defaults for users. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.securityGroup">securityGroup</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup</code> | Security group to use for the Aurora cluster. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipAddRotationMultiUser">skipAddRotationMultiUser</a></code> | <code>boolean</code> | When bootstrapping, hold off on creating the `addRotationMultiUser`. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProvisionDatabase">skipProvisionDatabase</a></code> | <code>boolean</code> | Skip provisioning the database? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProxy">skipProxy</a></code> | <code>boolean</code> | By default, we provide a proxy for non-manager users. |
@@ -338,6 +339,19 @@ public readonly schemas: string[];
 - *Default:* ['public']
 
 Schemas to create and grant defaults for users.
+
+---
+
+##### `securityGroup`<sup>Optional</sup> <a name="securityGroup" id="@time-loop/cdk-aurora.AuroraProps.property.securityGroup"></a>
+
+```typescript
+public readonly securityGroup: ISecurityGroup;
+```
+
+- *Type:* aws-cdk-lib.aws_ec2.ISecurityGroup
+- *Default:* create a new security group
+
+Security group to use for the Aurora cluster.
 
 ---
 
