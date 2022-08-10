@@ -61,10 +61,10 @@ export interface AuroraProps {
    */
   readonly retention?: Duration;
   /**
-   * Security group to use for the Aurora cluster.
-   * @default - create a new security group
+   * Security groups to use for the Aurora cluster.
+   * @default - create a single new security group to use for the cluster.
    */
-  readonly securityGroup?: aws_ec2.ISecurityGroup;
+  readonly securityGroups?: aws_ec2.ISecurityGroup[];
   /**
    * Schemas to create and grant defaults for users.
    * @default ['public']
@@ -135,7 +135,7 @@ export class Aurora extends Construct {
   readonly kmsKey: aws_kms.IKey;
   readonly proxy?: aws_rds.DatabaseProxy;
   readonly secrets: aws_rds.DatabaseSecret[];
-  readonly securityGroup: aws_ec2.ISecurityGroup;
+  readonly securityGroups: aws_ec2.ISecurityGroup[];
 
   constructor(scope: Construct, id: Namer, props: AuroraProps) {
     super(scope, id.pascal);
@@ -153,13 +153,15 @@ export class Aurora extends Construct {
 
     const secretName = id.addSuffix(['manager']);
 
-    if (props.securityGroup) {
-      this.securityGroup = props.securityGroup;
+    if (props.securityGroups) {
+      this.securityGroups = props.securityGroups;
     } else {
-      this.securityGroup = new aws_ec2.SecurityGroup(this, 'SecurityGroup', {
-        vpc: props.vpc,
-        allowAllOutbound: true,
-      });
+      this.securityGroups = [
+        new aws_ec2.SecurityGroup(this, 'SecurityGroup', {
+          vpc: props.vpc,
+          allowAllOutbound: true,
+        }),
+      ];
     }
 
     this.cluster = new aws_rds.DatabaseCluster(this, 'Database', {
@@ -179,7 +181,7 @@ export class Aurora extends Construct {
       instanceIdentifierBase: id.pascal,
       instanceProps: {
         instanceType,
-        securityGroups: [this.securityGroup],
+        securityGroups: this.securityGroups,
         vpc: props.vpc,
       },
       instances: props.instances,
