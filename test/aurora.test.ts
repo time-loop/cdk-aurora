@@ -143,20 +143,22 @@ describe('Aurora', () => {
         BackupRetentionPeriod: 30,
       });
     });
-    it('securityGroup', () => {
+    it('securityGroups', () => {
       const app = new App();
       const stack = new Stack(app, 'test');
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
       const description = 'Test security group';
-      const securityGroup = new aws_ec2.SecurityGroup(stack, 'SecurityGroup', {
-        vpc,
-        description,
-        allowAllOutbound: true,
-      });
+      const securityGroups = [
+        new aws_ec2.SecurityGroup(stack, 'SecurityGroup', {
+          vpc,
+          description,
+          allowAllOutbound: true,
+        }),
+      ];
       new Aurora(stack, new Namer(['test']), {
         databaseName,
-        securityGroup,
+        securityGroups,
         kmsKey,
         vpc,
       });
