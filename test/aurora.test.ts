@@ -1,4 +1,4 @@
-import { App, assertions, aws_kms, aws_ec2, Stack, Duration } from 'aws-cdk-lib';
+import { App, assertions, aws_kms, aws_ec2, Stack, Duration, aws_rds } from 'aws-cdk-lib';
 import { Namer } from 'multi-convention-namer';
 
 import { Aurora } from '../src';
@@ -61,7 +61,14 @@ describe('Aurora', () => {
       const stack = new Stack(app, 'test');
       const kmsKey = new aws_kms.Key(stack, 'Key');
       const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      const a = new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc, activityStream: true });
+      const postgresEngineVersion = aws_rds.AuroraPostgresEngineVersion.VER_11_16;
+      const a = new Aurora(stack, new Namer(['test']), {
+        databaseName,
+        kmsKey,
+        vpc,
+        activityStream: true,
+        postgresEngineVersion,
+      });
       const template = assertions.Template.fromStack(stack);
       template.resourceCountIs('AWS::Lambda::Function', 10);
       template.resourceCountIs('Custom::AuroraActivityStream', 1);

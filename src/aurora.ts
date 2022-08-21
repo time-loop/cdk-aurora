@@ -95,6 +95,13 @@ export interface AuroraProps {
    */
   readonly skipProxy?: boolean;
   /**
+   * Postgres version
+   * Be aware of version limitations
+   * See https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraFeaturesRegionsDBEngines.grids.html#Concepts.Aurora_Fea_Regions_DB-eng.Feature.RDS_Proxy
+   * @default 12.8
+   */
+  readonly postgresEngineVersion?: aws_rds.AuroraPostgresEngineVersion;
+  /**
    * In which VPC should the cluster be created?
    */
   readonly vpc: aws_ec2.IVpc;
@@ -152,6 +159,7 @@ export class Aurora extends Construct {
     }
 
     const secretName = id.addSuffix(['manager']);
+    const version = props.postgresEngineVersion ?? aws_rds.AuroraPostgresEngineVersion.VER_12_8;
 
     if (props.securityGroups) {
       this.securityGroups = props.securityGroups;
@@ -176,7 +184,7 @@ export class Aurora extends Construct {
         secretName: secretName.pascal,
       },
       engine: aws_rds.DatabaseClusterEngine.auroraPostgres({
-        version: aws_rds.AuroraPostgresEngineVersion.VER_12_8, // RDS Proxy limitation
+        version,
       }),
       instanceIdentifierBase: id.pascal,
       instanceProps: {
