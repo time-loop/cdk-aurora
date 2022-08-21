@@ -25,6 +25,11 @@ import { clusterArn } from './helpers';
 
 const passwordRotationVersion = '1.1.217';
 
+// Workaround for bug https://github.com/aws/aws-sdk-js-v3/issues/3063#issuecomment-1188564123
+declare global {
+  interface ReadableStream {}
+}
+
 export interface AuroraProps {
   /**
    * Turn on the Activity Stream feature of the Aurora cluster.
