@@ -13,7 +13,6 @@ const project = new clickupCdk.ClickUpCdkConstructLibrary({
   bundledDeps,
   deps: [...bundledDeps],
   devDeps: [
-    ...peerDeps,
     '@time-loop/clickup-projen',
     '@types/aws-lambda',
     '@types/pg',
