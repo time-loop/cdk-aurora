@@ -1,4 +1,4 @@
-const { clickupCdk } = require('@time-loop/clickup-projen');
+import { clickupCdk } from '@time-loop/clickup-projen';
 
 const bundledDeps = ['aws-lambda', 'aws-sdk', 'aws-xray-sdk-core', 'pg', 'pg-format'];
 const peerDeps = ['constructs@^10.0.5', 'multi-convention-namer@^0.1.12'];
@@ -24,9 +24,10 @@ const project = new clickupCdk.ClickUpCdkConstructLibrary({
     'sinon-spy-utils',
   ],
   peerDeps,
+  projenrcTs: true,
 
+  author: '', // leverage default
   repositoryUrl: '', // leverage default
-  authorName: '', // leverage default
   authorAddress: '', // leverage default
 });
 project.synth();
