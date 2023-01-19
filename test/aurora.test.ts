@@ -68,7 +68,9 @@ describe('Aurora', () => {
     it('uses t4g.medium', () => {
       template.hasResourceProperties('AWS::RDS::DBInstance', { DBInstanceClass: 'db.t4g.medium' });
     });
-
+    it('defaults to no prefix on secret names', () => {
+      template.hasResourceProperties('AWS::SecretsManager::Secret', { Name: 'TestManager' });
+    });
     // it('outputs ProxyEndpoint', () => {
     //   template.hasOutput('ProxyEndpoint', {});
     // });
@@ -125,6 +127,10 @@ describe('Aurora', () => {
       ];
       createAurora({ ...defaultAuroraProps, securityGroups });
       template.hasResourceProperties('AWS::EC2::SecurityGroup', { GroupDescription: description });
+    });
+    it('secretPrefix', () => {
+      createAurora({ ...defaultAuroraProps, secretPrefix: 'foo' });
+      template.hasResourceProperties('AWS::SecretsManager::Secret', { Name: 'FooTestManager' });
     });
     it.todo('skipProvisionDatabase');
     it('skipAddRotationMultiUser', () => {

@@ -76,6 +76,11 @@ export interface AuroraProps {
    */
   readonly schemas?: string[];
   /**
+   * Prefix for secrets. Useful for sharding out multiple Auroras in the same environment.
+   * @default - no prefix
+   */
+  readonly secretPrefix?: string;
+  /**
    * When bootstrapping, hold off on creating the `addRotationMultiUser`.
    * NOTE: the multiUser strategy relies on a `_clone` user, which is potentially surprising.
    * See https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotating-secrets_strategies.html#rotating-secrets-two-users
@@ -186,7 +191,7 @@ export class Aurora extends Construct {
       credentials: {
         username: secretName.snake,
         encryptionKey,
-        secretName: secretName.pascal,
+        secretName: secretName.addPrefix(props.secretPrefix ? [props.secretPrefix] : []).pascal,
       },
       engine: aws_rds.DatabaseClusterEngine.auroraPostgres({
         version,
@@ -349,7 +354,7 @@ export class Aurora extends Construct {
       const secret = new aws_rds.DatabaseSecret(this, user.pascal, {
         username,
         encryptionKey,
-        secretName: id.addSuffix(user).pascal,
+        secretName: id.addSuffix(user).addPrefix(props.secretPrefix ? [props.secretPrefix] : []).pascal,
         masterSecret: this.cluster.secret,
       });
       secret.attach(this.cluster); // This inserts the DB info into the secret
