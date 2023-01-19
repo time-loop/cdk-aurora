@@ -1,18 +1,40 @@
-import { App, assertions, aws_kms, aws_ec2, Stack, Duration, aws_rds } from 'aws-cdk-lib';
+import { App, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
+import { Annotations, Match, Template } from 'aws-cdk-lib/assertions';
+import { InstanceClass, InstanceType, InstanceSize, IVpc, SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { IKey, Key } from 'aws-cdk-lib/aws-kms';
+import { AuroraPostgresEngineVersion } from 'aws-cdk-lib/aws-rds';
 import { Namer } from 'multi-convention-namer';
 
-import { Aurora } from '../src';
+import { Aurora, AuroraProps } from '../src';
 
 const databaseName = 'fakeDbName';
 
+let app: App;
+let stack: Stack;
+let kmsKey: IKey;
+let vpc: IVpc;
+let template: Template;
+let defaultAuroraProps: AuroraProps;
+let aurora: Aurora;
+
+const createAurora = function (props?: AuroraProps) {
+  aurora = new Aurora(stack, new Namer(['test']), {
+    ...defaultAuroraProps,
+    ...props,
+  });
+  template = Template.fromStack(stack);
+};
+
 describe('Aurora', () => {
   describe('default', () => {
-    const app = new App();
-    const stack = new Stack(app, 'test');
-    const kmsKey = new aws_kms.Key(stack, 'Key');
-    const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-    new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc });
-    const template = assertions.Template.fromStack(stack);
+    beforeAll(() => {
+      app = new App();
+      stack = new Stack(app, 'test');
+      kmsKey = new Key(stack, 'Key');
+      vpc = new Vpc(stack, 'Vpc');
+      defaultAuroraProps = { databaseName, kmsKey, vpc };
+      createAurora();
+    });
     it('creates resources', () => {
       ['AWS::RDS::DBCluster', 'AWS::RDS::DBProxy'].forEach((r) => template.resourceCountIs(r, 1));
       ['AWS::RDS::DBInstance'].forEach((r) => template.resourceCountIs(r, 2));
@@ -23,32 +45,28 @@ describe('Aurora', () => {
     });
     it('databaseName', () => {
       template.hasResourceProperties('AWS::RDS::DBCluster', {
-        DatabaseName: assertions.Match.absent(), // we manage database creation via the custom resources
+        DatabaseName: Match.absent(), // we manage database creation via the custom resources
       });
-      template.hasResourceProperties('Custom::AuroraDatabase', {
-        databaseName,
-      });
+      template.hasResourceProperties('Custom::AuroraDatabase', { databaseName });
     });
     it('proxyName', () => {
       template.hasResourceProperties('AWS::RDS::DBProxy', { DBProxyName: 'Test' });
     });
-    it('retention', () => {
-      template.hasResourceProperties('AWS::RDS::DBCluster', {
-        BackupRetentionPeriod: 1,
+    it('removalPolicy', () => {
+      template.hasResource('AWS::RDS::DBCluster', {
+        UpdateReplacePolicy: 'Snapshot',
+        DeletionPolicy: 'Snapshot',
       });
+    });
+    it('retention', () => {
+      template.hasResourceProperties('AWS::RDS::DBCluster', { BackupRetentionPeriod: 1 });
     });
     it('provisions reader and writer', () => {
-      template.hasResourceProperties('Custom::AuroraUser', {
-        isWriter: false,
-      });
-      template.hasResourceProperties('Custom::AuroraUser', {
-        isWriter: true,
-      });
+      template.hasResourceProperties('Custom::AuroraUser', { isWriter: false });
+      template.hasResourceProperties('Custom::AuroraUser', { isWriter: true });
     });
     it('uses t4g.medium', () => {
-      template.hasResourceProperties('AWS::RDS::DBInstance', {
-        DBInstanceClass: 'db.t4g.medium',
-      });
+      template.hasResourceProperties('AWS::RDS::DBInstance', { DBInstanceClass: 'db.t4g.medium' });
     });
 
     // it('outputs ProxyEndpoint', () => {
@@ -56,151 +74,70 @@ describe('Aurora', () => {
     // });
   });
   describe('options', () => {
+    beforeEach(() => {
+      app = new App();
+      stack = new Stack(app, 'test');
+      kmsKey = new Key(stack, 'Key');
+      vpc = new Vpc(stack, 'Vpc');
+      defaultAuroraProps = { databaseName, kmsKey, vpc };
+    });
+
     it('activityStream', () => {
-      const app = new App();
-      const stack = new Stack(app, 'test');
-      const kmsKey = new aws_kms.Key(stack, 'Key');
-      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      const postgresEngineVersion = aws_rds.AuroraPostgresEngineVersion.VER_11_16;
-      const a = new Aurora(stack, new Namer(['test']), {
-        databaseName,
-        kmsKey,
-        vpc,
-        activityStream: true,
-        postgresEngineVersion,
-      });
-      const template = assertions.Template.fromStack(stack);
+      const postgresEngineVersion = AuroraPostgresEngineVersion.VER_11_16;
+      createAurora({ ...defaultAuroraProps, activityStream: true, postgresEngineVersion });
       template.resourceCountIs('AWS::Lambda::Function', 10);
       template.resourceCountIs('Custom::AuroraActivityStream', 1);
-      expect(a.activityStreamArn).not.toBeFalsy();
+      expect(aurora.activityStreamArn).not.toBeFalsy();
     });
     it('instances', () => {
-      const app = new App();
-      const stack = new Stack(app, 'test');
-      const kmsKey = new aws_kms.Key(stack, 'Key');
-      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), {
-        databaseName,
-        instances: 12,
-        kmsKey,
-        vpc,
-      });
-      const template = assertions.Template.fromStack(stack);
+      createAurora({ ...defaultAuroraProps, instances: 12 });
       template.resourceCountIs('AWS::RDS::DBInstance', 12);
     });
     it('instanceType', () => {
-      const app = new App();
-      const stack = new Stack(app, 'test');
-      const kmsKey = new aws_kms.Key(stack, 'Key');
-      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), {
-        databaseName,
-        instanceType: aws_ec2.InstanceType.of(aws_ec2.InstanceClass.R6G, aws_ec2.InstanceSize.XLARGE24),
-        kmsKey,
-        vpc,
-      });
-      const template = assertions.Template.fromStack(stack);
-      template.hasResourceProperties('AWS::RDS::DBInstance', {
-        DBInstanceClass: 'db.r6g.24xlarge',
-      });
+      createAurora({ ...defaultAuroraProps, instanceType: InstanceType.of(InstanceClass.R6G, InstanceSize.XLARGE24) });
+      template.hasResourceProperties('AWS::RDS::DBInstance', { DBInstanceClass: 'db.r6g.24xlarge' });
     });
     it('instanceType warns when not Graviton', () => {
-      const app = new App();
-      const stack = new Stack(app, 'test');
-      const kmsKey = new aws_kms.Key(stack, 'Key');
-      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), {
-        databaseName,
-        instanceType: aws_ec2.InstanceType.of(aws_ec2.InstanceClass.R5, aws_ec2.InstanceSize.XLARGE24),
-        kmsKey,
-        vpc,
-      });
-      const template = assertions.Template.fromStack(stack);
-      template.hasResourceProperties('AWS::RDS::DBInstance', {
-        DBInstanceClass: 'db.r5.24xlarge',
-      });
-      const annotation = assertions.Annotations.fromStack(stack);
-      annotation.hasWarning('*', assertions.Match.stringLikeRegexp('is not ARM64'));
+      createAurora({ ...defaultAuroraProps, instanceType: InstanceType.of(InstanceClass.R5, InstanceSize.XLARGE24) });
+      template.hasResourceProperties('AWS::RDS::DBInstance', { DBInstanceClass: 'db.r5.24xlarge' });
+      const annotation = Annotations.fromStack(stack);
+      annotation.hasWarning('*', Match.stringLikeRegexp('is not ARM64'));
     });
-    // I don't see how to test things that are outside the "Properties" block.
-    // it('removalPolicy', () => {
-    //   const app = new App();
-    //   const stack = new Stack(app, 'test');
-    //   const kmsKey = new aws_kms.Key(stack, 'Key');
-    //   const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-    //   new Aurora(stack, new Namer(['test']), {
-    //     kmsKey,
-    //     removalPolicy: RemovalPolicy.SNAPSHOT,
-    //     vpc,
-    //   });
-    //   const template = assertions.Template.fromStack(stack);
-    //   template.hasResourceProperties('AWS::RDS::DBCluster', {
-    //     UpdateReplacePolicy: 'Snapshot',
-    //     DeletionPolicy: 'Snapshot',
-    //   });
-    // });
-    it('retention', () => {
-      const app = new App();
-      const stack = new Stack(app, 'test');
-      const kmsKey = new aws_kms.Key(stack, 'Key');
-      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc, retention: Duration.days(30) });
-      const template = assertions.Template.fromStack(stack);
-      template.hasResourceProperties('AWS::RDS::DBCluster', {
-        BackupRetentionPeriod: 30,
+    it('removalPolicy', () => {
+      createAurora({ ...defaultAuroraProps, removalPolicy: RemovalPolicy.DESTROY });
+      template.hasResource('AWS::RDS::DBCluster', {
+        UpdateReplacePolicy: 'Delete',
+        DeletionPolicy: 'Delete',
       });
+    });
+    it('retention', () => {
+      createAurora({ ...defaultAuroraProps, retention: Duration.days(30) });
+      template.hasResourceProperties('AWS::RDS::DBCluster', { BackupRetentionPeriod: 30 });
     });
     it('securityGroups', () => {
-      const app = new App();
-      const stack = new Stack(app, 'test');
-      const kmsKey = new aws_kms.Key(stack, 'Key');
-      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
       const description = 'Test security group';
       const securityGroups = [
-        new aws_ec2.SecurityGroup(stack, 'SecurityGroup', {
+        new SecurityGroup(stack, 'SecurityGroup', {
           vpc,
           description,
           allowAllOutbound: true,
         }),
       ];
-      new Aurora(stack, new Namer(['test']), {
-        databaseName,
-        securityGroups,
-        kmsKey,
-        vpc,
-      });
-      const template = assertions.Template.fromStack(stack);
-      template.hasResourceProperties('AWS::EC2::SecurityGroup', {
-        GroupDescription: description,
-      });
+      createAurora({ ...defaultAuroraProps, securityGroups });
+      template.hasResourceProperties('AWS::EC2::SecurityGroup', { GroupDescription: description });
     });
     it.todo('skipProvisionDatabase');
     it('skipAddRotationMultiUser', () => {
-      const app = new App();
-      const stack = new Stack(app, 'test');
-      const kmsKey = new aws_kms.Key(stack, 'Key');
-      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc, skipAddRotationMultiUser: true });
-      const template = assertions.Template.fromStack(stack);
+      createAurora({ ...defaultAuroraProps, skipAddRotationMultiUser: true });
       ['AWS::SecretsManager::Secret'].forEach((r) => template.resourceCountIs(r, 3)); // Still have 3 users
       ['AWS::SecretsManager::RotationSchedule'].forEach((r) => template.resourceCountIs(r, 1)); // Only manager is rotated
     });
     it('skipProxy', () => {
-      const app = new App();
-      const stack = new Stack(app, 'test');
-      const kmsKey = new aws_kms.Key(stack, 'Key');
-      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc, skipProxy: true });
-      const template = assertions.Template.fromStack(stack);
+      createAurora({ ...defaultAuroraProps, skipProxy: true });
       template.resourceCountIs('AWS::RDS::DBProxy', 0);
     });
     it('skipUserProvisioning', () => {
-      const app = new App();
-      const stack = new Stack(app, 'test');
-      const kmsKey = new aws_kms.Key(stack, 'Key');
-      const vpc = new aws_ec2.Vpc(stack, 'Vpc');
-      new Aurora(stack, new Namer(['test']), { databaseName, kmsKey, vpc, skipUserProvisioning: true });
-      const template = assertions.Template.fromStack(stack);
+      createAurora({ ...defaultAuroraProps, skipUserProvisioning: true });
       template.resourceCountIs('Custom::RdsUser', 0);
     });
   });
