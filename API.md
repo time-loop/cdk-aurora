@@ -221,6 +221,7 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.removalPolicy">removalPolicy</a></code> | <code>aws-cdk-lib.RemovalPolicy</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.retention">retention</a></code> | <code>aws-cdk-lib.Duration</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.schemas">schemas</a></code> | <code>string[]</code> | Schemas to create and grant defaults for users. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.secretPrefix">secretPrefix</a></code> | <code>string \| multi-convention-namer.Namer</code> | Prefix for secrets. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.securityGroups">securityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | Security groups to use for the Aurora cluster. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipAddRotationMultiUser">skipAddRotationMultiUser</a></code> | <code>boolean</code> | When bootstrapping, hold off on creating the `addRotationMultiUser`. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProvisionDatabase">skipProvisionDatabase</a></code> | <code>boolean</code> | Skip provisioning the database? |
@@ -353,6 +354,21 @@ public readonly schemas: string[];
 - *Default:* ['public']
 
 Schemas to create and grant defaults for users.
+
+---
+
+##### `secretPrefix`<sup>Optional</sup> <a name="secretPrefix" id="@time-loop/cdk-aurora.AuroraProps.property.secretPrefix"></a>
+
+```typescript
+public readonly secretPrefix: string | Namer;
+```
+
+- *Type:* string | multi-convention-namer.Namer
+- *Default:* no prefix
+
+Prefix for secrets.
+
+Useful for sharding out multiple Auroras in the same environment.
 
 ---
 
