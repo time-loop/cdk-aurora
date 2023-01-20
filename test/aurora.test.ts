@@ -128,9 +128,15 @@ describe('Aurora', () => {
       createAurora({ ...defaultAuroraProps, securityGroups });
       template.hasResourceProperties('AWS::EC2::SecurityGroup', { GroupDescription: description });
     });
-    it('secretPrefix', () => {
-      createAurora({ ...defaultAuroraProps, secretPrefix: 'foo' });
-      template.hasResourceProperties('AWS::SecretsManager::Secret', { Name: 'FooTestManager' });
+    describe('secretPrefix', () => {
+      it('string', () => {
+        createAurora({ ...defaultAuroraProps, secretPrefix: 'foo' });
+        template.hasResourceProperties('AWS::SecretsManager::Secret', { Name: 'FooTestManager' });
+      });
+      it('Namer', () => {
+        createAurora({ ...defaultAuroraProps, secretPrefix: new Namer(['yabba', 'dabba', 'do']) });
+        template.hasResourceProperties('AWS::SecretsManager::Secret', { Name: 'YabbaDabbaDoTestManager' });
+      });
     });
     it.todo('skipProvisionDatabase');
     it('skipAddRotationMultiUser', () => {
