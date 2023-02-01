@@ -115,6 +115,10 @@ export interface AuroraProps {
    * In which VPC should the cluster be created?
    */
   readonly vpc: aws_ec2.IVpc;
+  /**
+   * @default - none, fallthrough to Aurora default subnet selection strategy
+   */
+  readonly vpcSubnets?: aws_ec2.SubnetSelection;
 }
 
 /**
@@ -204,6 +208,7 @@ export class Aurora extends Construct {
         instanceType,
         securityGroups: this.securityGroups,
         vpc: props.vpc,
+        vpcSubnets: props.vpcSubnets,
       },
       instances: props.instances,
       parameters: {

@@ -1,9 +1,19 @@
 import { App, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { Annotations, Match, Template } from 'aws-cdk-lib/assertions';
-import { InstanceClass, InstanceType, InstanceSize, IVpc, SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
+import {
+  CfnSubnet,
+  InstanceClass,
+  InstanceType,
+  InstanceSize,
+  IVpc,
+  SecurityGroup,
+  SubnetType,
+  Vpc,
+} from 'aws-cdk-lib/aws-ec2';
 import { IKey, Key } from 'aws-cdk-lib/aws-kms';
 import { AuroraPostgresEngineVersion } from 'aws-cdk-lib/aws-rds';
 import { Namer } from 'multi-convention-namer';
+// import { inspect } from 'util';
 
 import { Aurora, AuroraProps } from '../src';
 
@@ -151,6 +161,41 @@ describe('Aurora', () => {
     it('skipUserProvisioning', () => {
       createAurora({ ...defaultAuroraProps, skipUserProvisioning: true });
       template.resourceCountIs('Custom::RdsUser', 0);
+    });
+    it('vpcSubnets', () => {
+      vpc = new Vpc(stack, 'TestVpc', {
+        subnetConfiguration: [
+          {
+            name: 'ingress',
+            subnetType: SubnetType.PUBLIC,
+          },
+          {
+            name: 'application',
+            subnetType: SubnetType.PRIVATE_WITH_NAT,
+          },
+          {
+            name: 'rds',
+            subnetType: SubnetType.PRIVATE_ISOLATED,
+          },
+        ],
+      });
+      const securityGroups = [new SecurityGroup(stack, 'TestSecurityGroup', { vpc })];
+      createAurora({ ...defaultAuroraProps, securityGroups, vpc, vpcSubnets: { subnetGroupName: 'rds' } });
+
+      // THEN
+      const allVpcNodes = stack.node.findChild('TestVpc').node.findAll();
+      const rdsSubnets = allVpcNodes
+        .filter((n) => n.node.defaultChild instanceof CfnSubnet)
+        .map((n) => n.node.defaultChild as CfnSubnet)
+        .filter((s) => {
+          const tags = s.tags?.tagValues();
+          return tags && tags['aws-cdk:subnet-name'] === 'rds';
+        });
+      rdsSubnets.forEach((subnet) =>
+        template.hasResourceProperties('AWS::RDS::DBSubnetGroup', {
+          SubnetIds: Match.arrayWith([{ Ref: stack.getLogicalId(subnet) }]),
+        }),
+      );
     });
   });
 });
