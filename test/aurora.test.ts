@@ -133,6 +133,7 @@ describe('Aurora', () => {
           'Fn::GetAtt': [stack.getLogicalId(sg.node.defaultChild as CfnSecurityGroup), 'GroupId'],
         },
       ]);
+      expect(aurora.proxySecurityGroups).toStrictEqual([sg]);
     });
     it('removalPolicy', () => {
       createAurora({ ...defaultAuroraProps, removalPolicy: RemovalPolicy.DESTROY });
@@ -162,6 +163,7 @@ describe('Aurora', () => {
           'Fn::GetAtt': [stack.getLogicalId(sg.node.defaultChild as CfnSecurityGroup), 'GroupId'],
         },
       ]);
+      expect(aurora.securityGroups).toStrictEqual([sg]);
     });
     describe('secretPrefix', () => {
       it('string', () => {

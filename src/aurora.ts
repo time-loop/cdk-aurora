@@ -397,7 +397,7 @@ export class Aurora extends Construct {
       if (props.proxySecurityGroups) {
         this.proxySecurityGroups = props.proxySecurityGroups;
       } else {
-        this.securityGroups = [
+        this.proxySecurityGroups = [
           new aws_ec2.SecurityGroup(this, 'ProxySecurityGroup', {
             vpc: props.vpc,
             allowAllOutbound: true,
