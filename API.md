@@ -119,6 +119,7 @@ Any object.
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.securityGroups">securityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.activityStreamArn">activityStreamArn</a></code> | <code>string</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.proxy">proxy</a></code> | <code>aws-cdk-lib.aws_rds.DatabaseProxy</code> | *No description.* |
+| <code><a href="#@time-loop/cdk-aurora.Aurora.property.proxySecurityGroups">proxySecurityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | *No description.* |
 
 ---
 
@@ -194,6 +195,16 @@ public readonly proxy: DatabaseProxy;
 
 ---
 
+##### `proxySecurityGroups`<sup>Optional</sup> <a name="proxySecurityGroups" id="@time-loop/cdk-aurora.Aurora.property.proxySecurityGroups"></a>
+
+```typescript
+public readonly proxySecurityGroups: ISecurityGroup[];
+```
+
+- *Type:* aws-cdk-lib.aws_ec2.ISecurityGroup[]
+
+---
+
 
 ## Structs <a name="Structs" id="Structs"></a>
 
@@ -218,6 +229,7 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instances">instances</a></code> | <code>number</code> | How many instances? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instanceType">instanceType</a></code> | <code>aws-cdk-lib.aws_ec2.InstanceType</code> | https://aws.amazon.com/blogs/aws/new-amazon-rds-on-graviton2-processors/ says we can use Graviton2 processors. So, M6G, R6G, C6G? TODO: should we warn about non Graviton2 processor usage? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.postgresEngineVersion">postgresEngineVersion</a></code> | <code>aws-cdk-lib.aws_rds.AuroraPostgresEngineVersion</code> | Postgres version Be aware of version limitations See https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraFeaturesRegionsDBEngines.grids.html#Concepts.Aurora_Fea_Regions_DB-eng.Feature.RDS_Proxy. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.proxySecurityGroups">proxySecurityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | Security groups to use for the RDS Proxy. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.removalPolicy">removalPolicy</a></code> | <code>aws-cdk-lib.RemovalPolicy</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.retention">retention</a></code> | <code>aws-cdk-lib.Duration</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.schemas">schemas</a></code> | <code>string[]</code> | Schemas to create and grant defaults for users. |
@@ -320,6 +332,19 @@ public readonly postgresEngineVersion: AuroraPostgresEngineVersion;
 - *Default:* 12.8
 
 Postgres version Be aware of version limitations See https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraFeaturesRegionsDBEngines.grids.html#Concepts.Aurora_Fea_Regions_DB-eng.Feature.RDS_Proxy.
+
+---
+
+##### `proxySecurityGroups`<sup>Optional</sup> <a name="proxySecurityGroups" id="@time-loop/cdk-aurora.AuroraProps.property.proxySecurityGroups"></a>
+
+```typescript
+public readonly proxySecurityGroups: ISecurityGroup[];
+```
+
+- *Type:* aws-cdk-lib.aws_ec2.ISecurityGroup[]
+- *Default:* create a single new security group to use for the proxy.
+
+Security groups to use for the RDS Proxy.
 
 ---
 
