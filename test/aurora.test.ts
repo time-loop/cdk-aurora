@@ -128,9 +128,11 @@ describe('Aurora', () => {
       template.hasResourceProperties('AWS::RDS::DBProxy', {
         VpcSecurityGroupIds: actualSg,
       });
-      expect(actualSg.asArray()).toStrictEqual([{
-        'Fn::GetAtt': [stack.getLogicalId(sg.node.defaultChild as CfnSecurityGroup), 'GroupId'],
-      }]);
+      expect(actualSg.asArray()).toStrictEqual([
+        {
+          'Fn::GetAtt': [stack.getLogicalId(sg.node.defaultChild as CfnSecurityGroup), 'GroupId'],
+        },
+      ]);
     });
     it('removalPolicy', () => {
       createAurora({ ...defaultAuroraProps, removalPolicy: RemovalPolicy.DESTROY });
@@ -155,9 +157,11 @@ describe('Aurora', () => {
       template.hasResourceProperties('AWS::RDS::DBCluster', {
         VpcSecurityGroupIds: actualSg,
       });
-      expect(actualSg.asArray()).toStrictEqual([{
-        'Fn::GetAtt': [stack.getLogicalId(sg.node.defaultChild as CfnSecurityGroup), 'GroupId'],
-      }]);
+      expect(actualSg.asArray()).toStrictEqual([
+        {
+          'Fn::GetAtt': [stack.getLogicalId(sg.node.defaultChild as CfnSecurityGroup), 'GroupId'],
+        },
+      ]);
     });
     describe('secretPrefix', () => {
       it('string', () => {
