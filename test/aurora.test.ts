@@ -1,6 +1,7 @@
 import { App, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
-import { Annotations, Match, Template } from 'aws-cdk-lib/assertions';
+import { Annotations, Capture, Match, Template } from 'aws-cdk-lib/assertions';
 import {
+  CfnSecurityGroup,
   CfnSubnet,
   InstanceClass,
   InstanceType,
@@ -115,6 +116,22 @@ describe('Aurora', () => {
       const annotation = Annotations.fromStack(stack);
       annotation.hasWarning('*', Match.stringLikeRegexp('is not ARM64'));
     });
+    it('proxySecurityGroups', () => {
+      const description = 'Test security group';
+      const sg = new SecurityGroup(stack, 'MySecurityGroup', {
+        vpc,
+        description,
+        allowAllOutbound: true,
+      });
+      createAurora({ ...defaultAuroraProps, proxySecurityGroups: [sg] });
+      const actualSg = new Capture();
+      template.hasResourceProperties('AWS::RDS::DBProxy', {
+        VpcSecurityGroupIds: actualSg,
+      });
+      expect(actualSg.asArray()).toStrictEqual([{
+        'Fn::GetAtt': [stack.getLogicalId(sg.node.defaultChild as CfnSecurityGroup), 'GroupId'],
+      }]);
+    });
     it('removalPolicy', () => {
       createAurora({ ...defaultAuroraProps, removalPolicy: RemovalPolicy.DESTROY });
       template.hasResource('AWS::RDS::DBCluster', {
@@ -128,15 +145,19 @@ describe('Aurora', () => {
     });
     it('securityGroups', () => {
       const description = 'Test security group';
-      const securityGroups = [
-        new SecurityGroup(stack, 'SecurityGroup', {
-          vpc,
-          description,
-          allowAllOutbound: true,
-        }),
-      ];
-      createAurora({ ...defaultAuroraProps, securityGroups });
-      template.hasResourceProperties('AWS::EC2::SecurityGroup', { GroupDescription: description });
+      const sg = new SecurityGroup(stack, 'MySecurityGroup', {
+        vpc,
+        description,
+        allowAllOutbound: true,
+      });
+      createAurora({ ...defaultAuroraProps, securityGroups: [sg] });
+      const actualSg = new Capture();
+      template.hasResourceProperties('AWS::RDS::DBCluster', {
+        VpcSecurityGroupIds: actualSg,
+      });
+      expect(actualSg.asArray()).toStrictEqual([{
+        'Fn::GetAtt': [stack.getLogicalId(sg.node.defaultChild as CfnSecurityGroup), 'GroupId'],
+      }]);
     });
     describe('secretPrefix', () => {
       it('string', () => {

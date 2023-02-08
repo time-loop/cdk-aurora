@@ -58,6 +58,11 @@ export interface AuroraProps {
    */
   readonly kmsKey: aws_kms.IKey;
   /**
+   * Security groups to use for the RDS Proxy.
+   * @default - create a single new security group to use for the proxy.
+   */
+  readonly proxySecurityGroups?: aws_ec2.ISecurityGroup[];
+  /**
    * @default - passthrough
    */
   readonly removalPolicy?: RemovalPolicy;
@@ -155,6 +160,7 @@ export class Aurora extends Construct {
   readonly cluster: aws_rds.DatabaseCluster;
   readonly kmsKey: aws_kms.IKey;
   readonly proxy?: aws_rds.DatabaseProxy;
+  readonly proxySecurityGroups?: aws_ec2.ISecurityGroup[];
   readonly secrets: aws_rds.DatabaseSecret[];
   readonly securityGroups: aws_ec2.ISecurityGroup[];
 
@@ -388,11 +394,22 @@ export class Aurora extends Construct {
     this.secrets = secrets.map((s) => s.secret);
 
     if (!props.skipProxy) {
+      if (props.proxySecurityGroups) {
+        this.proxySecurityGroups = props.proxySecurityGroups;
+      } else {
+        this.securityGroups = [
+          new aws_ec2.SecurityGroup(this, 'ProxySecurityGroup', {
+            vpc: props.vpc,
+            allowAllOutbound: true,
+          }),
+        ];
+      }
       this.proxy = new aws_rds.DatabaseProxy(this, 'Proxy', {
         dbProxyName: id.pascal,
         proxyTarget: aws_rds.ProxyTarget.fromCluster(this.cluster),
         //requireTLS: true, // If we're never allowing connections from outside the VPC, why bother?
         secrets: this.secrets,
+        securityGroups: this.proxySecurityGroups,
         vpc: props.vpc,
       });
       new CfnOutput(this, 'ProxyEndpoint', {
