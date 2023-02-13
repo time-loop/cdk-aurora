@@ -89,7 +89,6 @@ export async function handler(
   context: awsLambda.Context,
   callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> {
-  console.log('Version 1 - split!');
   try {
     switch (event.RequestType) {
       case CfnRequestType.CREATE:
@@ -212,6 +211,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
 
   let secretResult: SecretsResult;
   try {
+    console.log('Fetching credentials from Secrets Manager');
     secretResult = await m.fetchAndConformSecrets(managerSecretArn, props.userSecretArn, props.proxyHost);
   } catch (err) {
     return resultFactory({
@@ -241,8 +241,11 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   try {
     const role = props.isWriter ? 'r_writer' : 'r_reader';
     const userAndClone = [secretResult.username, usernameClone];
+    console.log(`Creating users "${secretResult.username}" and "${usernameClone}"`);
     await Promise.all(userAndClone.map((u) => m.createUser(client, u)));
+    console.log(`Conforming passwords`);
     await Promise.all(userAndClone.map((u) => m.conformPassword(client, u, secretResult.password)));
+    console.log(`Granting role ${role}`);
     await Promise.all(userAndClone.map((u) => m.grantRole(client, u, role)));
   } catch (err) {
     return resultFactory({

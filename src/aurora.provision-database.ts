@@ -65,7 +65,6 @@ export async function handler(
   context: awsLambda.Context,
   callback: awsLambda.Callback,
 ): Promise<awsLambda.CloudFormationCustomResourceResponse> {
-  console.log('Version 1 - split!');
   try {
     switch (event.RequestType) {
       case CfnRequestType.CREATE:
@@ -187,6 +186,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
 
   let clientConfig: ClientConfig;
   try {
+    console.log('Fetching credentials from Secrets Manager');
     clientConfig = await m.fetchSecret(managerSecretArn);
   } catch (err) {
     return resultFactory({
