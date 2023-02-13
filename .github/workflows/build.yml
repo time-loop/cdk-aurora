@@ -20,6 +20,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
       - name: GitHub Packages authorization
+        if: ${{ github.job != 'release_npm' }}
         run: |-
           cat > .npmrc <<EOF
           //npm.pkg.github.com/:_authToken=${{ secrets.ALL_PACKAGE_READ_TOKEN }}
@@ -28,7 +29,7 @@ jobs:
       - name: Make cdk-ecr-deployment sane
         run: export FORCE_PREBUILT_LAMBDA=1
       - name: Setup Node.js
-        uses: actions/setup-node@v2.2.0
+        uses: actions/setup-node@v3
         with:
           node-version: 14.18.0
       - name: Install dependencies
@@ -36,18 +37,18 @@ jobs:
       - name: build
         run: npx projen build
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: coverage
-      - id: self_mutation
-        name: Find mutations
+      - name: Find mutations
+        id: self_mutation
         run: |-
           git add .
-          git diff --staged --patch --exit-code > .repo.patch || echo "::set-output name=self_mutation_happened::true"
-      - if: steps.self_mutation.outputs.self_mutation_happened
-        name: Upload patch
-        uses: actions/upload-artifact@v2
+          git diff --staged --patch --exit-code > .repo.patch || echo "self_mutation_happened=true" >> $GITHUB_OUTPUT
+      - name: Upload patch
+        if: steps.self_mutation.outputs.self_mutation_happened
+        uses: actions/upload-artifact@v3
         with:
           name: .repo.patch
           path: .repo.patch
@@ -57,8 +58,11 @@ jobs:
           echo "::error::Files were changed during build (see build log). If this was triggered from a fork, you will need to update your branch."
           cat .repo.patch
           exit 1
+      - name: Backup artifact permissions
+        run: cd dist && getfacl -R . > permissions-backup.acl
+        continue-on-error: true
       - name: Upload artifact
-        uses: actions/upload-artifact@v2.1.1
+        uses: actions/upload-artifact@v3
         with:
           name: build-artifact
           path: dist
@@ -99,12 +103,24 @@ jobs:
     steps:
       - uses: actions/setup-node@v3
         with:
-          node-version: 14.x
+          node-version: 14.18.0
       - name: Download build artifacts
         uses: actions/download-artifact@v3
         with:
           name: build-artifact
           path: dist
+      - name: Restore build artifact permissions
+        run: cd dist && setfacl --restore=permissions-backup.acl
+        continue-on-error: true
+      - name: GitHub Packages authorization
+        if: ${{ github.job != 'release_npm' }}
+        run: |-
+          cat > .npmrc <<EOF
+          //npm.pkg.github.com/:_authToken=${{ secrets.ALL_PACKAGE_READ_TOKEN }}
+          @time-loop:registry=https://npm.pkg.github.com/
+          EOF
+      - name: Make cdk-ecr-deployment sane
+        run: export FORCE_PREBUILT_LAMBDA=1
       - name: Prepare Repository
         run: mv dist .repo
       - name: Install Dependencies
