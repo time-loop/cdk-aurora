@@ -238,6 +238,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
     });
     await client.connect();
   } catch (err) {
+    console.log(`client.connect failed: ${err}`);
     return resultFactory({
       ReasonPrefix: `client.connect failed: ${err}`,
       Status: CfnStatus.FAILED,
