@@ -231,6 +231,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
     });
     await client.connect();
   } catch (err) {
+    console.log(`client.connect failed: ${err}`);
     return resultFactory({
       PhysicalResourceId: secretResult.username,
       ReasonPrefix: `client.connect failed: ${err}`,
