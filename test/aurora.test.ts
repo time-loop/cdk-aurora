@@ -175,11 +175,15 @@ describe('Aurora', () => {
         template.hasResourceProperties('AWS::SecretsManager::Secret', { Name: 'YabbaDabbaDoTestManager' });
       });
     });
-    it.todo('skipProvisionDatabase');
     it('skipAddRotationMultiUser', () => {
       createAurora({ ...defaultAuroraProps, skipAddRotationMultiUser: true });
       ['AWS::SecretsManager::Secret'].forEach((r) => template.resourceCountIs(r, 3)); // Still have 3 users
       ['AWS::SecretsManager::RotationSchedule'].forEach((r) => template.resourceCountIs(r, 1)); // Only manager is rotated
+    });
+    it('skipProvisionDatabase', () => {
+      createAurora({ ...defaultAuroraProps, skipProvisionDatabase: true });
+      template.resourceCountIs('Custom::AuroraDatabase', 0);
+      template.resourceCountIs('Custom::AuroraUser', 0); // Implicitly skip user provisioning
     });
     it('skipProxy', () => {
       createAurora({ ...defaultAuroraProps, skipProxy: true });

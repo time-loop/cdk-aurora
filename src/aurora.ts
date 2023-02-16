@@ -94,14 +94,29 @@ export interface AuroraProps {
   readonly skipAddRotationMultiUser?: boolean;
   /**
    * Skip provisioning the database?
+   * Useful for bootstrapping stacks to get the majority of resources in place.
+   * The db provisioner will:
+   * - create the database (if it doesn't already exist)
+   * - create the schemas (if they don't already exist)
+   * - create (if they don't already exist) and configure the r_reader and r_writer roles
+   *
+   * NOTE: This will implicitly skip user provisioning, too.
    *
    * @default false
    */
   readonly skipProvisionDatabase?: boolean;
   /**
    * When bootstrapping, hold off on provisioning users in the database.
+   * Useful for bootstrapping stacks to get the majority of resources in place.
+   * The user provisioner will:
+   * - conform the user's secret (ensure the host, engine, proxyHost keys are present and correct)
+   * - create the user (if it doesn't already exist) and related `_clone` user
+   * - conform the user's password to what appears in the secrets manager secret (heal from broken rotations)
+   * - grant the r_reader or r_writer role to the user and it's `_clone`.
    *
-   * @default false
+   * NOTE: This is implicitly true if skipProvisionDatabase is true.
+   *
+   * @default false except when skipProvisionDatabase is true, then also true
    */
   readonly skipUserProvisioning?: boolean;
   /**
@@ -418,13 +433,17 @@ export class Aurora extends Construct {
       });
     }
 
-    if (!props.skipUserProvisioning) {
+    // We can't provision the users until the database is provisioned,
+    // because we need the roles to exist.
+    // Also, we need the proxy to be deployed enough that the endpoint is readable.
+    if (!props.skipProvisionDatabase && !props.skipUserProvisioning) {
       secrets.map((s) => {
         const rdsUser = rdsUserProvisioner(new Namer([s.userStr]), {
           isWriter: s.userStr === 'writer',
-          proxyHost: this.proxy?.endpoint,
+          proxyHost: this.proxy?.endpoint, // Usually a reference is sufficient, but...
           userSecretArn: s.secret.secretArn,
         });
+        if (this.proxy) rdsUser.node.addDependency(this.proxy!); // ... because this.proxy optional, we must make an explicit depedency.
         rdsUser.node.addDependency(this.cluster);
       });
     }
