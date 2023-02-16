@@ -438,6 +438,14 @@ public readonly skipProvisionDatabase: boolean;
 
 Skip provisioning the database?
 
+Useful for bootstrapping stacks to get the majority of resources in place.
+The db provisioner will:
+- create the database (if it doesn't already exist)
+- create the schemas (if they don't already exist)
+- create (if they don't already exist) and configure the r_reader and r_writer roles
+
+NOTE: This will implicitly skip user provisioning, too.
+
 ---
 
 ##### `skipProxy`<sup>Optional</sup> <a name="skipProxy" id="@time-loop/cdk-aurora.AuroraProps.property.skipProxy"></a>
@@ -460,9 +468,18 @@ public readonly skipUserProvisioning: boolean;
 ```
 
 - *Type:* boolean
-- *Default:* false
+- *Default:* false except when skipProvisionDatabase is true, then also true
 
 When bootstrapping, hold off on provisioning users in the database.
+
+Useful for bootstrapping stacks to get the majority of resources in place.
+The user provisioner will:
+- conform the users' secret (ensure the host, engine, proxyHost keys are present and correct)
+- create the user (if it doesn't already exist) and related `_clone` user
+- conform the user's password to what appears in the secrets manager secret (heal from broken rotations)
+- grant the r_reader or r_writer role to the user and it's `_clone`.
+
+NOTE: This is implicitly true if skipProvisionDatabase is true.
 
 ---
 
