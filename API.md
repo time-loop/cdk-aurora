@@ -474,7 +474,7 @@ When bootstrapping, hold off on provisioning users in the database.
 
 Useful for bootstrapping stacks to get the majority of resources in place.
 The user provisioner will:
-- conform the user's secret (ensure the host, engine, proxyHost keys are present and correct)
+- conform the users' secret (ensure the host, engine, proxyHost keys are present and correct)
 - create the user (if it doesn't already exist) and related `_clone` user
 - conform the user's password to what appears in the secrets manager secret (heal from broken rotations)
 - grant the r_reader or r_writer role to the user and it's `_clone`.
