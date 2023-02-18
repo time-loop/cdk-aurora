@@ -100,6 +100,21 @@ describe('Aurora', () => {
     // it('outputs ProxyEndpoint', () => {
     //   template.hasOutput('ProxyEndpoint', {});
     // });
+    it('vpcSubnets default to PRIVATE_WITH_NAT', () => {
+      const allVpcNodes = stack.node.findChild('TestVpc').node.findAll();
+      const rdsSubnets = allVpcNodes
+        .filter((n) => n.node.defaultChild instanceof CfnSubnet)
+        .map((n) => n.node.defaultChild as CfnSubnet)
+        .filter((s) => {
+          const tags = s.tags?.tagValues();
+          return tags && tags['aws-cdk:subnet-name'] === 'application'; // the default subnet selection is PRIVATE_WITH_NAT
+        });
+      rdsSubnets.forEach((subnet) =>
+        template.hasResourceProperties('AWS::RDS::DBSubnetGroup', {
+          SubnetIds: Match.arrayWith([{ Ref: stack.getLogicalId(subnet) }]),
+        }),
+      );
+    });
   });
 
   describe('options', () => {
