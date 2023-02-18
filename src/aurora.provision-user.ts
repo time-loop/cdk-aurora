@@ -287,9 +287,11 @@ export class Methods {
   ): Promise<SecretsResult> {
     const secretsManager = new awsSdk.SecretsManager();
 
+    console.log(`Fetching secret ${managerSecretArn}`);
     const managerSecretRaw = await secretsManager.getSecretValue({ SecretId: managerSecretArn }).promise();
     const managerSecret = JSON.parse(managerSecretRaw.SecretString!);
 
+    console.log(`Fetching secret ${userSecretArn}`);
     const userSecretRaw = await secretsManager.getSecretValue({ SecretId: userSecretArn }).promise();
     const userSecret = JSON.parse(userSecretRaw.SecretString!);
 
