@@ -42,7 +42,22 @@ describe('Aurora', () => {
       app = new App();
       stack = new Stack(app, 'test');
       kmsKey = new Key(stack, 'Key');
-      vpc = new Vpc(stack, 'Vpc');
+      vpc = new Vpc(stack, 'TestVpc', {
+        subnetConfiguration: [
+          {
+            name: 'ingress',
+            subnetType: SubnetType.PUBLIC,
+          },
+          {
+            name: 'application',
+            subnetType: SubnetType.PRIVATE_WITH_NAT,
+          },
+          {
+            name: 'rds',
+            subnetType: SubnetType.PRIVATE_ISOLATED,
+          },
+        ],
+      });
       defaultAuroraProps = { databaseName, kmsKey, vpc };
       createAurora();
     });
@@ -85,13 +100,44 @@ describe('Aurora', () => {
     // it('outputs ProxyEndpoint', () => {
     //   template.hasOutput('ProxyEndpoint', {});
     // });
+    it('vpcSubnets default to PRIVATE_WITH_NAT', () => {
+      const allVpcNodes = stack.node.findChild('TestVpc').node.findAll();
+      const rdsSubnets = allVpcNodes
+        .filter((n) => n.node.defaultChild instanceof CfnSubnet)
+        .map((n) => n.node.defaultChild as CfnSubnet)
+        .filter((s) => {
+          const tags = s.tags?.tagValues();
+          return tags && tags['aws-cdk:subnet-name'] === 'application'; // the default subnet selection is PRIVATE_WITH_NAT
+        });
+      rdsSubnets.forEach((subnet) =>
+        template.hasResourceProperties('AWS::RDS::DBSubnetGroup', {
+          SubnetIds: Match.arrayWith([{ Ref: stack.getLogicalId(subnet) }]),
+        }),
+      );
+    });
   });
+
   describe('options', () => {
     beforeEach(() => {
       app = new App();
       stack = new Stack(app, 'test');
       kmsKey = new Key(stack, 'Key');
-      vpc = new Vpc(stack, 'Vpc');
+      vpc = new Vpc(stack, 'TestVpc', {
+        subnetConfiguration: [
+          {
+            name: 'ingress',
+            subnetType: SubnetType.PUBLIC,
+          },
+          {
+            name: 'application',
+            subnetType: SubnetType.PRIVATE_WITH_NAT,
+          },
+          {
+            name: 'rds',
+            subnetType: SubnetType.PRIVATE_ISOLATED,
+          },
+        ],
+      });
       defaultAuroraProps = { databaseName, kmsKey, vpc };
     });
 
@@ -194,25 +240,7 @@ describe('Aurora', () => {
       template.resourceCountIs('Custom::RdsUser', 0);
     });
     it('vpcSubnets', () => {
-      vpc = new Vpc(stack, 'TestVpc', {
-        subnetConfiguration: [
-          {
-            name: 'ingress',
-            subnetType: SubnetType.PUBLIC,
-          },
-          {
-            name: 'application',
-            subnetType: SubnetType.PRIVATE_WITH_NAT,
-          },
-          {
-            name: 'rds',
-            subnetType: SubnetType.PRIVATE_ISOLATED,
-          },
-        ],
-      });
-      const securityGroups = [new SecurityGroup(stack, 'TestSecurityGroup', { vpc })];
-      createAurora({ ...defaultAuroraProps, securityGroups, vpc, vpcSubnets: { subnetGroupName: 'rds' } });
-
+      createAurora({ ...defaultAuroraProps, vpcSubnets: { subnetGroupName: 'rds' } });
       // THEN
       const allVpcNodes = stack.node.findChild('TestVpc').node.findAll();
       const rdsSubnets = allVpcNodes
