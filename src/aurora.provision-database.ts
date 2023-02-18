@@ -291,6 +291,7 @@ export class Methods {
   public async fetchSecret(managerSecretArn: string): Promise<ClientConfig> {
     const secretsManager = new awsSdk.SecretsManager();
 
+    console.log(`Fetching secret ${managerSecretArn}`);
     const managerSecretRaw = await secretsManager.getSecretValue({ SecretId: managerSecretArn }).promise();
     const managerSecret = JSON.parse(managerSecretRaw.SecretString!);
 

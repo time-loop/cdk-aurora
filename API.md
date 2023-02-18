@@ -117,6 +117,7 @@ Any object.
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.kmsKey">kmsKey</a></code> | <code>aws-cdk-lib.aws_kms.IKey</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.secrets">secrets</a></code> | <code>aws-cdk-lib.aws_rds.DatabaseSecret[]</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.securityGroups">securityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | *No description.* |
+| <code><a href="#@time-loop/cdk-aurora.Aurora.property.vpcSubnets">vpcSubnets</a></code> | <code>aws-cdk-lib.aws_ec2.SubnetSelection</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.activityStreamArn">activityStreamArn</a></code> | <code>string</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.proxy">proxy</a></code> | <code>aws-cdk-lib.aws_rds.DatabaseProxy</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.Aurora.property.proxySecurityGroups">proxySecurityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | *No description.* |
@@ -172,6 +173,16 @@ public readonly securityGroups: ISecurityGroup[];
 ```
 
 - *Type:* aws-cdk-lib.aws_ec2.ISecurityGroup[]
+
+---
+
+##### `vpcSubnets`<sup>Required</sup> <a name="vpcSubnets" id="@time-loop/cdk-aurora.Aurora.property.vpcSubnets"></a>
+
+```typescript
+public readonly vpcSubnets: SubnetSelection;
+```
+
+- *Type:* aws-cdk-lib.aws_ec2.SubnetSelection
 
 ---
 
@@ -239,7 +250,7 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProvisionDatabase">skipProvisionDatabase</a></code> | <code>boolean</code> | Skip provisioning the database? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProxy">skipProxy</a></code> | <code>boolean</code> | By default, we provide a proxy for non-manager users. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipUserProvisioning">skipUserProvisioning</a></code> | <code>boolean</code> | When bootstrapping, hold off on provisioning users in the database. |
-| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.vpcSubnets">vpcSubnets</a></code> | <code>aws-cdk-lib.aws_ec2.SubnetSelection</code> | *No description.* |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.vpcSubnets">vpcSubnets</a></code> | <code>aws-cdk-lib.aws_ec2.SubnetSelection</code> | Used to decide which subnets to place the cluster in. |
 
 ---
 
@@ -490,7 +501,15 @@ public readonly vpcSubnets: SubnetSelection;
 ```
 
 - *Type:* aws-cdk-lib.aws_ec2.SubnetSelection
-- *Default:* none, fallthrough to Aurora default subnet selection strategy
+- *Default:* {subnetType:aws_ec2.SubnetType.PRIVATE_WITH_NAT} - all private subnets
+
+Used to decide which subnets to place the cluster in.
+
+Which also decides the subnets for the RDS Proxy,
+and the provisioning lambdas.
+
+Previously we would just fallthrough for the Aurora and RDS stuff,
+but then we don't have a reasonable solution for our provisioning lambdas.
 
 ---
 

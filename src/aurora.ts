@@ -136,7 +136,14 @@ export interface AuroraProps {
    */
   readonly vpc: aws_ec2.IVpc;
   /**
-   * @default - none, fallthrough to Aurora default subnet selection strategy
+   * Used to decide which subnets to place the cluster in.
+   * Which also decides the subnets for the RDS Proxy,
+   * and the provisioning lambdas.
+   *
+   * Previously we would just fallthrough for the Aurora and RDS stuff,
+   * but then we don't have a reasonable solution for our provisioning lambdas.
+   *
+   * @default {subnetType:aws_ec2.SubnetType.PRIVATE_WITH_NAT} - all private subnets
    */
   readonly vpcSubnets?: aws_ec2.SubnetSelection;
 }
@@ -178,6 +185,7 @@ export class Aurora extends Construct {
   readonly proxySecurityGroups?: aws_ec2.ISecurityGroup[];
   readonly secrets: aws_rds.DatabaseSecret[];
   readonly securityGroups: aws_ec2.ISecurityGroup[];
+  readonly vpcSubnets: aws_ec2.SubnetSelection;
 
   constructor(scope: Construct, id: Namer, props: AuroraProps) {
     super(scope, id.pascal);
@@ -198,6 +206,8 @@ export class Aurora extends Construct {
 
     const secretName = id.addSuffix(['manager']);
     const version = props.postgresEngineVersion ?? aws_rds.AuroraPostgresEngineVersion.VER_12_8;
+
+    const vpcSubnets = (this.vpcSubnets = props.vpcSubnets ?? { subnetType: aws_ec2.SubnetType.PRIVATE_WITH_NAT });
 
     if (props.securityGroups) {
       this.securityGroups = props.securityGroups;
@@ -229,7 +239,7 @@ export class Aurora extends Construct {
         instanceType,
         securityGroups: this.securityGroups,
         vpc: props.vpc,
-        vpcSubnets: props.vpcSubnets,
+        vpcSubnets,
       },
       instances: props.instances,
       parameters: {
@@ -261,6 +271,8 @@ export class Aurora extends Construct {
           handler,
           logRetention: aws_logs.RetentionDays.ONE_WEEK,
           tracing: aws_lambda.Tracing.ACTIVE,
+          vpc: props.vpc,
+          vpcSubnets,
         });
 
         [
@@ -312,6 +324,7 @@ export class Aurora extends Construct {
       logRetention: aws_logs.RetentionDays.ONE_WEEK,
       tracing: aws_lambda.Tracing.ACTIVE,
       vpc: props.vpc,
+      vpcSubnets,
     };
 
     const databaseProvisioner = new aws_lambda_nodejs.NodejsFunction(this, 'provision-database', provisionerProps);
