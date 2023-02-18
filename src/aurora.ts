@@ -271,6 +271,7 @@ export class Aurora extends Construct {
           handler,
           logRetention: aws_logs.RetentionDays.ONE_WEEK,
           tracing: aws_lambda.Tracing.ACTIVE,
+          vpc: props.vpc,
           vpcSubnets,
         });
 
