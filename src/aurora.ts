@@ -207,7 +207,7 @@ export class Aurora extends Construct {
     const secretName = id.addSuffix(['manager']);
     const version = props.postgresEngineVersion ?? aws_rds.AuroraPostgresEngineVersion.VER_12_8;
 
-    const vpcSubnets = this.vpcSubnets = props.vpcSubnets ?? { subnetType: aws_ec2.SubnetType.PRIVATE_WITH_NAT };
+    const vpcSubnets = (this.vpcSubnets = props.vpcSubnets ?? { subnetType: aws_ec2.SubnetType.PRIVATE_WITH_NAT });
 
     if (props.securityGroups) {
       this.securityGroups = props.securityGroups;
