@@ -43,15 +43,18 @@ describe('connect', () => {
   const m = new Methods();
   let connectStub: sinon.SinonStub;
   let queryStub: sinon.SinonStub;
+  let setTimeoutStub: sinon.SinonStub;
 
   beforeEach(() => {
     connectStub = sinon.stub(Client.prototype, 'connect');
     queryStub = sinon.stub(Client.prototype, 'query');
+    setTimeoutStub = sinon.stub(global, 'setTimeout');
   });
 
   afterEach(() => {
     connectStub.restore();
     queryStub.restore();
+    setTimeoutStub.restore();
   });
 
   const standardClientConfig: ClientConfig = {
