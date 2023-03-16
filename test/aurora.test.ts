@@ -130,7 +130,7 @@ describe('Aurora', () => {
           },
           {
             name: 'application',
-            subnetType: SubnetType.PRIVATE_WITH_NAT,
+            subnetType: SubnetType.PRIVATE_WITH_EGRESS,
           },
           {
             name: 'rds',
