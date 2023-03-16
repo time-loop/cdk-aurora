@@ -43,7 +43,6 @@ describe('connect', () => {
   const m = new Methods();
   let connectStub: sinon.SinonStub;
   let queryStub: sinon.SinonStub;
-  let setTimeoutStub: sinon.SinonStub;
 
   beforeEach(() => {
     connectStub = sinon.stub(Client.prototype, 'connect');
