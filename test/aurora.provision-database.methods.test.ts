@@ -41,10 +41,15 @@ describe('fetchSecret', () => {
 
 describe('postgres', () => {
   const m = new Methods();
-  const postgresStub = sinon.stub(Client.prototype, 'query');
   const client = new Client();
+  let postgresStub: sinon.SinonStub;
+
   beforeEach(() => {
-    postgresStub.reset();
+    postgresStub = sinon.stub(Client.prototype, 'query');
+  });
+
+  afterEach(() => {
+    postgresStub.restore();
   });
 
   describe('createRole', () => {
