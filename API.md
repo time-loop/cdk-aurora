@@ -501,7 +501,7 @@ public readonly vpcSubnets: SubnetSelection;
 ```
 
 - *Type:* aws-cdk-lib.aws_ec2.SubnetSelection
-- *Default:* {subnetType:aws_ec2.SubnetType.PRIVATE_WITH_NAT} - all private subnets
+- *Default:* {subnetType:aws_ec2.SubnetType.PRIVATE_WITH_EGRESS} - all private subnets
 
 Used to decide which subnets to place the cluster in.
 
