@@ -143,7 +143,7 @@ export interface AuroraProps {
    * Previously we would just fallthrough for the Aurora and RDS stuff,
    * but then we don't have a reasonable solution for our provisioning lambdas.
    *
-   * @default {subnetType:aws_ec2.SubnetType.PRIVATE_WITH_NAT} - all private subnets
+   * @default {subnetType:aws_ec2.SubnetType.PRIVATE_WITH_EGRESS} - all private subnets
    */
   readonly vpcSubnets?: aws_ec2.SubnetSelection;
 }
@@ -207,7 +207,7 @@ export class Aurora extends Construct {
     const secretName = id.addSuffix(['manager']);
     const version = props.postgresEngineVersion ?? aws_rds.AuroraPostgresEngineVersion.VER_12_8;
 
-    const vpcSubnets = (this.vpcSubnets = props.vpcSubnets ?? { subnetType: aws_ec2.SubnetType.PRIVATE_WITH_NAT });
+    const vpcSubnets = (this.vpcSubnets = props.vpcSubnets ?? { subnetType: aws_ec2.SubnetType.PRIVATE_WITH_EGRESS });
 
     if (props.securityGroups) {
       this.securityGroups = props.securityGroups;
