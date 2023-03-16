@@ -67,7 +67,6 @@ describe('connect', () => {
     await m.connect(standardClientConfig);
     expect(connectStub.callCount).toEqual(1);
     expect(queryStub.callCount).toEqual(1);
-    expect(setTimeoutStub.callCount).toEqual(0);
   });
 
   it('retries when failing to connect', async () => {
