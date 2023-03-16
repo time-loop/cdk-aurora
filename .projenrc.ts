@@ -6,7 +6,7 @@ const peerDeps = ['constructs@^10.0.5', 'multi-convention-namer@^0.1.12'];
 const project = new clickupCdk.ClickUpCdkConstructLibrary({
   name: '@time-loop/cdk-aurora',
 
-  cdkVersion: '2.38.1',
+  cdkVersion: '2.69.0', // probably actually lower, if anyone wants to figure out where PRIVATE_WITH_EGRESS starts working...
   defaultReleaseBranch: 'main',
   licensed: true,
 
