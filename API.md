@@ -237,6 +237,8 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.kmsKey">kmsKey</a></code> | <code>aws-cdk-lib.aws_kms.IKey</code> | The KMS key to use... everywhere. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.vpc">vpc</a></code> | <code>aws-cdk-lib.aws_ec2.IVpc</code> | In which VPC should the cluster be created? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.activityStream">activityStream</a></code> | <code>boolean</code> | Turn on the Activity Stream feature of the Aurora cluster. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.cloudwatchLogsExports">cloudwatchLogsExports</a></code> | <code>string[]</code> | Which logs to export to CloudWatch. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.cloudwatchLogsRetention">cloudwatchLogsRetention</a></code> | <code>aws-cdk-lib.aws_logs.RetentionDays</code> | How long to retain logs published to CloudWatch logs. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instances">instances</a></code> | <code>number</code> | How many instances? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instanceType">instanceType</a></code> | <code>aws-cdk-lib.aws_ec2.InstanceType</code> | https://aws.amazon.com/blogs/aws/new-amazon-rds-on-graviton2-processors/ says we can use Graviton2 processors. So, M6G, R6G, C6G? TODO: should we warn about non Graviton2 processor usage? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.postgresEngineVersion">postgresEngineVersion</a></code> | <code>aws-cdk-lib.aws_rds.AuroraPostgresEngineVersion</code> | Postgres version Be aware of version limitations See https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraFeaturesRegionsDBEngines.grids.html#Concepts.Aurora_Fea_Regions_DB-eng.Feature.RDS_Proxy. |
@@ -302,6 +304,35 @@ public readonly activityStream: boolean;
 - *Default:* false
 
 Turn on the Activity Stream feature of the Aurora cluster.
+
+---
+
+##### `cloudwatchLogsExports`<sup>Optional</sup> <a name="cloudwatchLogsExports" id="@time-loop/cdk-aurora.AuroraProps.property.cloudwatchLogsExports"></a>
+
+```typescript
+public readonly cloudwatchLogsExports: string[];
+```
+
+- *Type:* string[]
+- *Default:* ['postgresql']
+
+Which logs to export to CloudWatch.
+
+See
+https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.CloudWatch.html
+
+---
+
+##### `cloudwatchLogsRetention`<sup>Optional</sup> <a name="cloudwatchLogsRetention" id="@time-loop/cdk-aurora.AuroraProps.property.cloudwatchLogsRetention"></a>
+
+```typescript
+public readonly cloudwatchLogsRetention: RetentionDays;
+```
+
+- *Type:* aws-cdk-lib.aws_logs.RetentionDays
+- *Default:* aws_logs.RetentionDays.ONE_MONTH
+
+How long to retain logs published to CloudWatch logs.
 
 ---
 
