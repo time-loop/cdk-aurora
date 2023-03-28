@@ -4,6 +4,7 @@ import * as awsXray from 'aws-xray-sdk-core';
 import { Client, ClientConfig } from 'pg';
 /* eslint-disable @typescript-eslint/no-require-imports */
 import format = require('pg-format');
+import { wait } from './helpers';
 /* eslint-enable @typescript-eslint/no-require-imports */
 const awsSdk = awsXray.captureAWS(_awsSdk);
 
@@ -329,7 +330,7 @@ export class Methods {
         if (attempts < maxRetries) {
           attempts += 1;
           console.log(`Failed to connect (attempt ${attempts}/${maxRetries}): ${err}, sleeping ${retryDelayMs}ms`);
-          await new Promise((r) => setTimeout(r, retryDelayMs));
+          await wait(retryDelayMs);
         } else {
           console.log(`Failed to connect after ${maxRetries} attempts: ${err}`);
           throw err;

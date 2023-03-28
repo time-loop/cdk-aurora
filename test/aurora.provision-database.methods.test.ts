@@ -4,6 +4,10 @@ import sinon from 'sinon';
 
 import { Methods } from '../src/aurora.provision-database';
 
+jest.mock('../src/helpers', () => ({
+  wait: jest.fn(() => Promise.resolve()),
+}));
+
 sinon.stub(console, 'log');
 
 describe('fetchSecret', () => {
@@ -100,6 +104,18 @@ describe('connect', () => {
     );
     expect(connectStub.callCount).toEqual(maxRetries + 1);
     expect(queryStub.callCount).toEqual(maxRetries + 1);
+  });
+
+  it('retries when SELECT 1 fails, but then succeeds', async () => {
+    const maxRetries = 5;
+    const retryDelayMs = 1;
+    connectStub.resolves();
+    queryStub.onFirstCall().rejects(new Error('whoopsie'));
+    queryStub.onSecondCall().resolves({ rowCount: 1 });
+    await m.connect(standardClientConfig, { maxRetries, retryDelayMs });
+
+    expect(connectStub.callCount).toEqual(2);
+    expect(queryStub.callCount).toEqual(2);
   });
 });
 
