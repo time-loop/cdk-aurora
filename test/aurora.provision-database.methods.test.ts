@@ -76,7 +76,7 @@ describe('connect', () => {
   });
 
   // TODO: figure out how to stub these correctly?
-  it.skip('retries when failing to connect', async () => {
+  it('retries when failing to connect', async () => {
     const maxRetries = 5;
     const retryDelayMs = 1;
     connectStub.rejects(new Error('whoopsie'));
@@ -85,7 +85,7 @@ describe('connect', () => {
     expect(queryStub.callCount).toEqual(0);
   });
 
-  it.skip('retries when SELECT 1 fails', async () => {
+  it('retries when SELECT 1 fails', async () => {
     const maxRetries = 5;
     const retryDelayMs = 1;
     connectStub.resolves();
@@ -95,7 +95,7 @@ describe('connect', () => {
     expect(queryStub.callCount).toEqual(maxRetries + 1);
   });
 
-  it.skip('retries when SELECT 1 has rowcount != 1', async () => {
+  it('retries when SELECT 1 has rowcount != 1', async () => {
     const maxRetries = 5;
     const retryDelayMs = 1;
     connectStub.resolves();
