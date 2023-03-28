@@ -121,7 +121,7 @@ describe('handler', () => {
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeDbName',
-        Reason: 'client.connect failed: Error: whoopsie see also fakeLogStreamName',
+        Reason: 'connect failed: Error: whoopsie see also fakeLogStreamName',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
@@ -175,7 +175,7 @@ describe('handler', () => {
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeDbName',
-        Reason: 'client.connect failed: Error: whoopsie see also fakeLogStreamName',
+        Reason: 'connect failed: Error: whoopsie see also fakeLogStreamName',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
@@ -286,7 +286,7 @@ describe('handler', () => {
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeDbName',
-        Reason: 'client.connect failed: Error: whoopsie see also fakeLogStreamName',
+        Reason: 'connect failed: Error: whoopsie see also fakeLogStreamName',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
@@ -340,7 +340,7 @@ describe('handler', () => {
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeDbName',
-        Reason: 'client.connect failed: Error: whoopsie see also fakeLogStreamName',
+        Reason: 'connect failed: Error: whoopsie see also fakeLogStreamName',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
