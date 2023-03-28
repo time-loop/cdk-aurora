@@ -6,7 +6,6 @@ import {
   CloudFormationCustomResourceUpdateEvent,
   Context,
 } from 'aws-lambda';
-import { Client } from 'pg';
 import sinon from 'sinon';
 
 import { Methods, handler } from '../src/aurora.provision-database';
@@ -20,7 +19,7 @@ const createRoleStub = sinon.stub(Methods.prototype, 'createRole');
 const createDatabaseStub = sinon.stub(Methods.prototype, 'createDatabase');
 const createSchemaStub = sinon.stub(Methods.prototype, 'createSchema');
 const configureRoleStub = sinon.stub(Methods.prototype, 'configureRole');
-const postgresStub = sinon.stub(Client.prototype, 'connect');
+const connectStub = sinon.stub(Methods.prototype, 'connect');
 
 const standardSecretResult = {
   clientConfig: {
@@ -39,7 +38,7 @@ beforeEach(() => {
   createDatabaseStub.reset();
   createSchemaStub.reset();
   configureRoleStub.reset();
-  postgresStub.reset();
+  connectStub.reset();
 
   jest.resetModules();
   process.env = { ...originalEnv };
@@ -117,7 +116,7 @@ describe('handler', () => {
     it('handles error on initial connect to postgres', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.onFirstCall().rejects(new Error('whoopsie'));
+      connectStub.onFirstCall().rejects(new Error('whoopsie'));
       const r = await handler(createEvent, context, callback);
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
@@ -132,7 +131,7 @@ describe('handler', () => {
     it('handles error from createDatabase', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.onFirstCall().resolves();
+      connectStub.onFirstCall().resolves();
       createRoleStub.resolves();
       createDatabaseStub.rejects(new Error('whoopsie'));
       const r = await handler(createEvent, context, callback);
@@ -149,7 +148,7 @@ describe('handler', () => {
     it('handles error from createRole', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.onFirstCall().resolves();
+      connectStub.onFirstCall().resolves();
       createRoleStub.resolves();
       createDatabaseStub.resolves();
       createRoleStub.rejects(new Error('whoopsie'));
@@ -167,11 +166,11 @@ describe('handler', () => {
     it('handles error from postgres re-connect', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.onFirstCall().resolves();
+      connectStub.onFirstCall().resolves();
       createRoleStub.resolves();
       createDatabaseStub.resolves();
       createRoleStub.resolves();
-      postgresStub.onSecondCall().rejects(new Error('whoopsie'));
+      connectStub.onSecondCall().rejects(new Error('whoopsie'));
       const r = await handler(createEvent, context, callback);
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
@@ -227,7 +226,7 @@ describe('handler', () => {
     it('succeeds', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.resolves();
+      connectStub.resolves();
       createRoleStub.resolves();
       createDatabaseStub.resolves();
       createRoleStub.resolves();
@@ -282,7 +281,7 @@ describe('handler', () => {
     it('handles error on initial connect to postgres', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.onFirstCall().rejects(new Error('whoopsie'));
+      connectStub.onFirstCall().rejects(new Error('whoopsie'));
       const r = await handler(updateEvent, context, callback);
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
@@ -297,7 +296,7 @@ describe('handler', () => {
     it('handles error from createDatabase', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.onFirstCall().resolves();
+      connectStub.onFirstCall().resolves();
       createRoleStub.resolves();
       createDatabaseStub.rejects(new Error('whoopsie'));
       const r = await handler(updateEvent, context, callback);
@@ -314,7 +313,7 @@ describe('handler', () => {
     it('handles error from createRole', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.onFirstCall().resolves();
+      connectStub.onFirstCall().resolves();
       createRoleStub.resolves();
       createDatabaseStub.resolves();
       createRoleStub.rejects(new Error('whoopsie'));
@@ -332,11 +331,11 @@ describe('handler', () => {
     it('handles error from postgres re-connect', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.onFirstCall().resolves();
+      connectStub.onFirstCall().resolves();
       createRoleStub.resolves();
       createDatabaseStub.resolves();
       createRoleStub.resolves();
-      postgresStub.onSecondCall().rejects(new Error('whoopsie'));
+      connectStub.onSecondCall().rejects(new Error('whoopsie'));
       const r = await handler(updateEvent, context, callback);
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
@@ -390,7 +389,7 @@ describe('handler', () => {
     it('succeeds', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);
-      postgresStub.onFirstCall().resolves();
+      connectStub.onFirstCall().resolves();
       createRoleStub.resolves();
       createDatabaseStub.resolves();
       createRoleStub.resolves();
