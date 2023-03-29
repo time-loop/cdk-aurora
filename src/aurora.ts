@@ -322,6 +322,7 @@ export class Aurora extends Construct {
         MANAGER_SECRET_ARN: this.cluster.secret!.secretArn,
       },
       logRetention: aws_logs.RetentionDays.ONE_WEEK,
+      timeout: Duration.minutes(14), // since we're retrying connections, be patient.
       tracing: aws_lambda.Tracing.ACTIVE,
       vpc: props.vpc,
       vpcSubnets,
