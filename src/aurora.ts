@@ -59,9 +59,8 @@ export interface AuroraProps {
   readonly instances?: number;
   /**
    * https://aws.amazon.com/blogs/aws/new-amazon-rds-on-graviton2-processors/
-   * says we can use Graviton2 processors. So, M6G, R6G, C6G?
-   * TODO: should we warn about non Graviton2 processor usage?
-   * @default aws_ec2.InstanceType.of(aws_ec2.InstanceClass.T3,aws_ec2.InstanceSize.MEDIUM)
+   * says we can use Graviton2 processors. Yay!
+   * @default aws_ec2.InstanceType.of(aws_ec2.InstanceClass.T4G,aws_ec2.InstanceSize.MEDIUM)
    */
   readonly instanceType?: aws_ec2.InstanceType;
   /**
@@ -338,6 +337,7 @@ export class Aurora extends Construct {
         MANAGER_SECRET_ARN: this.cluster.secret!.secretArn,
       },
       logRetention: aws_logs.RetentionDays.ONE_WEEK,
+      timeout: Duration.minutes(14), // since we're retrying connections, be patient.
       tracing: aws_lambda.Tracing.ACTIVE,
       vpc: props.vpc,
       vpcSubnets,

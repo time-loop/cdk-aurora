@@ -4,8 +4,14 @@ import * as awsXray from 'aws-xray-sdk-core';
 import { Client, ClientConfig } from 'pg';
 /* eslint-disable @typescript-eslint/no-require-imports */
 import format = require('pg-format');
+import { wait } from './helpers';
 /* eslint-enable @typescript-eslint/no-require-imports */
 const awsSdk = awsXray.captureAWS(_awsSdk);
+
+const RETRY_DELAY_MS = 10000; // give it 10 seconds
+const MAX_RETIRES = 60; // and 60 retries
+// for a total of 10 minutes
+// So... we need to make sure the lambda doesn't timeout before this.
 
 export interface RdsDatabaseProvisionerProps {
   /**
@@ -198,15 +204,13 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   let client: Client;
   try {
     console.log(`Connecting to database "postgres"`);
-    client = new Client({
-      ...clientConfig,
-      database: 'postgres', // The grants below care which db we are in. But defaulting to postgres is fine if we just are handling users.
-    });
-    await client.connect();
+    // While the grants below care which database we are in,
+    // we haven't created the database yet, so we need to connect to postgres.
+    client = await m.connect({ ...clientConfig, database: 'postgres' });
   } catch (err) {
-    console.log(`client.connect failed: ${err}`);
+    console.log(`connect failed: ${err}`);
     return resultFactory({
-      ReasonPrefix: `client.connect failed: ${err}`,
+      ReasonPrefix: `connect failed: ${err}`,
       Status: CfnStatus.FAILED,
     });
   }
@@ -232,15 +236,11 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
 
   try {
     console.log(`Connecting to database "${props.databaseName}"`);
-    client = new Client({
-      ...clientConfig,
-      database: props.databaseName, // The grants below care which db we are in.
-    });
-    await client.connect();
+    client = await m.connect({ ...clientConfig, database: props.databaseName });
   } catch (err) {
-    console.log(`client.connect failed: ${err}`);
+    console.log(`connect failed: ${err}`);
     return resultFactory({
-      ReasonPrefix: `client.connect failed: ${err}`,
+      ReasonPrefix: `connect failed: ${err}`,
       Status: CfnStatus.FAILED,
     });
   }
@@ -269,6 +269,11 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
     ReasonPrefix: 'Success',
     Status: CfnStatus.SUCCESS,
   });
+}
+
+interface ConnectProps {
+  retryDelayMs?: number;
+  maxRetries?: number;
 }
 
 /**
@@ -301,6 +306,37 @@ export class Methods {
       user: managerSecret.username,
       password: managerSecret.password,
     };
+  }
+
+  /**
+   * Connect to the database. Retry as necessary.
+   * Be paranoid and validate the connection.
+   * @param clientConfig where to connect
+   */
+  public async connect(clientConfig: ClientConfig, props?: ConnectProps): Promise<Client> {
+    const retryDelayMs = props?.retryDelayMs ?? RETRY_DELAY_MS;
+    const maxRetries = props?.maxRetries ?? MAX_RETIRES;
+    let attempts = 0;
+    while (true) {
+      try {
+        const client = new Client(clientConfig);
+        await client.connect();
+        console.log('Connected, validating');
+        // So... how do we validate this?
+        const res = await client.query('SELECT 1');
+        if (res.rowCount !== 1) throw new Error('expected 1 row, got ' + res.rowCount);
+        return client;
+      } catch (err) {
+        if (attempts < maxRetries) {
+          attempts += 1;
+          console.log(`Failed to connect (attempt ${attempts}/${maxRetries}): ${err}, sleeping ${retryDelayMs}ms`);
+          await wait(retryDelayMs);
+        } else {
+          console.log(`Failed to connect after ${maxRetries} attempts: ${err}`);
+          throw err;
+        }
+      }
+    }
   }
 
   /**

@@ -1,8 +1,12 @@
 import AWSMock from 'aws-sdk-mock';
-import { Client } from 'pg';
+import { Client, ClientConfig } from 'pg';
 import sinon from 'sinon';
 
 import { Methods } from '../src/aurora.provision-database';
+
+jest.mock('../src/helpers', () => ({
+  wait: jest.fn(() => Promise.resolve()),
+}));
 
 sinon.stub(console, 'log');
 
@@ -39,12 +43,94 @@ describe('fetchSecret', () => {
   });
 });
 
+describe('connect', () => {
+  const m = new Methods();
+  let connectStub: sinon.SinonStub;
+  let queryStub: sinon.SinonStub;
+  let setTimeoutStub: sinon.SinonStub;
+
+  beforeEach(() => {
+    connectStub = sinon.stub(Client.prototype, 'connect');
+    queryStub = sinon.stub(Client.prototype, 'query');
+    setTimeoutStub = sinon.stub(global, 'setTimeout');
+  });
+
+  afterEach(() => {
+    connectStub.restore();
+    queryStub.restore();
+    setTimeoutStub.restore();
+  });
+
+  const standardClientConfig: ClientConfig = {
+    host: 'managerHost',
+    port: 5432,
+    database: 'managerEngine',
+  };
+
+  it('succeeds', async () => {
+    connectStub.resolves();
+    queryStub.resolves({ rowCount: 1 }); // SELECT 1 should return 1 row.
+    await m.connect(standardClientConfig);
+    expect(connectStub.callCount).toEqual(1);
+    expect(queryStub.callCount).toEqual(1);
+  });
+
+  // TODO: figure out how to stub these correctly?
+  it('retries when failing to connect', async () => {
+    const maxRetries = 5;
+    const retryDelayMs = 1;
+    connectStub.rejects(new Error('whoopsie'));
+    await expect(m.connect(standardClientConfig, { maxRetries, retryDelayMs })).rejects.toThrowError('whoopsie');
+    expect(connectStub.callCount).toEqual(maxRetries + 1); // +1 because the first call is not a retry
+    expect(queryStub.callCount).toEqual(0);
+  });
+
+  it('retries when SELECT 1 fails', async () => {
+    const maxRetries = 5;
+    const retryDelayMs = 1;
+    connectStub.resolves();
+    queryStub.rejects(new Error('whoopsie'));
+    await expect(m.connect(standardClientConfig, { maxRetries, retryDelayMs })).rejects.toThrowError('whoopsie');
+    expect(connectStub.callCount).toEqual(maxRetries + 1);
+    expect(queryStub.callCount).toEqual(maxRetries + 1);
+  });
+
+  it('retries when SELECT 1 has rowcount != 1', async () => {
+    const maxRetries = 5;
+    const retryDelayMs = 1;
+    connectStub.resolves();
+    queryStub.resolves({ rowCount: 0 }); // SELECT 1 should return 1 row, but... ???
+    await expect(m.connect(standardClientConfig, { maxRetries, retryDelayMs })).rejects.toThrowError(
+      'expected 1 row, got 0',
+    );
+    expect(connectStub.callCount).toEqual(maxRetries + 1);
+    expect(queryStub.callCount).toEqual(maxRetries + 1);
+  });
+
+  it('retries when SELECT 1 fails, but then succeeds', async () => {
+    const maxRetries = 5;
+    const retryDelayMs = 1;
+    connectStub.resolves();
+    queryStub.onFirstCall().rejects(new Error('whoopsie'));
+    queryStub.onSecondCall().resolves({ rowCount: 1 });
+    await m.connect(standardClientConfig, { maxRetries, retryDelayMs });
+
+    expect(connectStub.callCount).toEqual(2);
+    expect(queryStub.callCount).toEqual(2);
+  });
+});
+
 describe('postgres', () => {
   const m = new Methods();
-  const postgresStub = sinon.stub(Client.prototype, 'query');
   const client = new Client();
+  let postgresStub: sinon.SinonStub;
+
   beforeEach(() => {
-    postgresStub.reset();
+    postgresStub = sinon.stub(Client.prototype, 'query');
+  });
+
+  afterEach(() => {
+    postgresStub.restore();
   });
 
   describe('createRole', () => {
