@@ -37,6 +37,17 @@ export interface AuroraProps {
    */
   readonly activityStream?: boolean;
   /**
+   * Which logs to export to CloudWatch. See
+   * https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.CloudWatch.html
+   * @default ['postgresql']
+   */
+  readonly cloudwatchLogsExports?: string[];
+  /**
+   * How long to retain logs published to CloudWatch logs.
+   * @default aws_logs.RetentionDays.ONE_MONTH
+   */
+  readonly cloudwatchLogsRetention?: aws_logs.RetentionDays;
+  /**
    * Name the database you would like a database created.
    * This also will target which database has default grants applied for users.
    */
@@ -200,6 +211,9 @@ export class Aurora extends Construct {
       );
     }
 
+    const cloudwatchLogsExports = props.cloudwatchLogsExports ?? ['postgresql'];
+    const cloudwatchLogsRetention = props.cloudwatchLogsRetention ?? aws_logs.RetentionDays.ONE_MONTH;
+
     const secretPrefix =
       props.secretPrefix instanceof Namer ? props.secretPrefix : new Namer([props.secretPrefix ?? '']);
 
@@ -224,6 +238,8 @@ export class Aurora extends Construct {
         retention: props.retention ?? Duration.days(1),
         preferredWindow: '01:00-03:00', // 6pm Pacific time through 8pm
       },
+      cloudwatchLogsExports,
+      cloudwatchLogsRetention,
       clusterIdentifier: id.pascal,
       credentials: {
         username: secretName.snake,
@@ -244,7 +260,7 @@ export class Aurora extends Construct {
       parameters: {
         // While these are mentioned in the docs, applying them doesn't work.
         'rds.logical_replication': '1', // found in the cluster parameters.
-        // wal_level: 'logical', // not found in cluster parameters, but implicitly set byt rds.logical_replication
+        // wal_level: 'logical', // not found in cluster parameters, but implicitly set by rds.logical_replication
         max_replication_slots: '10', // Arbitrary, must be > 1
         max_wal_senders: '10', // Arbitrary, must be > 1
         wal_sender_timeout: '0', // Never time out. Risky, but recommended.

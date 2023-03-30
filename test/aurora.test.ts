@@ -69,6 +69,20 @@ describe('Aurora', () => {
       );
       template.resourceCountIs('AWS::Lambda::Function', 5);
     });
+    describe('cloudwatch logs', () => {
+      it('exports', () => {
+        template.hasResourceProperties('AWS::RDS::DBCluster', {
+          EnableCloudwatchLogsExports: ['postgresql'],
+        });
+      });
+      it('retention', () => {
+        template.hasResourceProperties('Custom::LogRetention', {
+          // TODO: would be nice to have a ref confirming that this applies to the correct log group
+          RetentionInDays: 30,
+        });
+      });
+    });
+
     it('databaseName', () => {
       template.hasResourceProperties('AWS::RDS::DBCluster', {
         DatabaseName: Match.absent(), // we manage database creation via the custom resources
