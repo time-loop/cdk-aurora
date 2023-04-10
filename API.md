@@ -541,6 +541,8 @@ HOWEVER, this will cause any changes to the database name to be destructive.
 Which is why it is false by default.
 This causes the database name to be set via the `aws_rds.DatabaseCluster` construct.
 
+WARNING: enabling this after you've created your database will cause it to be destroyed and recreated.
+
 ---
 
 ##### `vpcSubnets`<sup>Optional</sup> <a name="vpcSubnets" id="@time-loop/cdk-aurora.AuroraProps.property.vpcSubnets"></a>
