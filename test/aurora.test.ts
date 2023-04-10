@@ -253,6 +253,10 @@ describe('Aurora', () => {
       createAurora({ ...defaultAuroraProps, skipUserProvisioning: true });
       template.resourceCountIs('Custom::RdsUser', 0);
     });
+    it('useDefaultDatabaseName', () => {
+      createAurora({ ...defaultAuroraProps, useDefaultDatabaseName: true });
+      template.hasResourceProperties('AWS::RDS::DBCluster', { DatabaseName: 'fakeDbName' });
+    });
     it('vpcSubnets', () => {
       createAurora({ ...defaultAuroraProps, vpcSubnets: { subnetGroupName: 'rds' } });
       // THEN

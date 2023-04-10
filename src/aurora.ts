@@ -142,6 +142,18 @@ export interface AuroraProps {
    */
   readonly postgresEngineVersion?: aws_rds.AuroraPostgresEngineVersion;
   /**
+   * If you want the `DB Name` to appear in the console,
+   * you need to set this to true.
+   * HOWEVER, this will cause any changes to the database name to be destructive.
+   * Which is why it is false by default.
+   * This causes the database name to be set via the `aws_rds.DatabaseCluster` construct.
+   *
+   * WARNING: enabling this after you've created your database will cause it to be destroyed and recreated.
+   *
+   * @default - CREATE DATABASE via the provisioner, not Cfn
+   */
+  readonly useDefaultDatabaseName?: boolean;
+  /**
    * In which VPC should the cluster be created?
    */
   readonly vpc: aws_ec2.IVpc;
@@ -246,6 +258,7 @@ export class Aurora extends Construct {
         encryptionKey,
         secretName: secretName.addPrefix(secretPrefix).pascal,
       },
+      defaultDatabaseName: props.useDefaultDatabaseName ? props.databaseName : undefined,
       engine: aws_rds.DatabaseClusterEngine.auroraPostgres({
         version,
       }),
