@@ -11,8 +11,8 @@ import {
   SubnetType,
   Vpc,
 } from 'aws-cdk-lib/aws-ec2';
-import { IKey, Key } from 'aws-cdk-lib/aws-kms';
-import { AuroraPostgresEngineVersion } from 'aws-cdk-lib/aws-rds';
+import { CfnKey, IKey, Key } from 'aws-cdk-lib/aws-kms';
+import { AuroraPostgresEngineVersion, PerformanceInsightRetention } from 'aws-cdk-lib/aws-rds';
 import { Namer } from 'multi-convention-namer';
 // import { inspect } from 'util';
 
@@ -89,6 +89,13 @@ describe('Aurora', () => {
       });
       template.hasResourceProperties('Custom::AuroraDatabase', { databaseName });
     });
+    it('performanceInsights', () => {
+      template.hasResourceProperties('AWS::RDS::DBInstance', {
+        PerformanceInsightsKMSKeyId: { 'Fn::GetAtt': [stack.getLogicalId(kmsKey.node.defaultChild as CfnKey), 'Arn'] },
+        EnablePerformanceInsights: true,
+      });
+    });
+
     it('proxyName', () => {
       template.hasResourceProperties('AWS::RDS::DBProxy', { DBProxyName: 'Test' });
     });
@@ -175,6 +182,20 @@ describe('Aurora', () => {
       template.hasResourceProperties('AWS::RDS::DBInstance', { DBInstanceClass: 'db.r5.24xlarge' });
       const annotation = Annotations.fromStack(stack);
       annotation.hasWarning('*', Match.stringLikeRegexp('is not ARM64'));
+    });
+    describe('performanceInsightRetention', () => {
+      it('LONG_TERM', () => {
+        createAurora({ ...defaultAuroraProps, performanceInsightRetention: PerformanceInsightRetention.LONG_TERM });
+        template.hasResourceProperties('AWS::RDS::DBInstance', {
+          PerformanceInsightsRetentionPeriod: PerformanceInsightRetention.LONG_TERM,
+        });
+      });
+      it.each<number>([31, 62, 93])('%i days', (days) => {
+        createAurora({ ...defaultAuroraProps, performanceInsightRetention: days });
+        template.hasResourceProperties('AWS::RDS::DBInstance', {
+          PerformanceInsightsRetentionPeriod: days,
+        });
+      });
     });
     it('proxySecurityGroups', () => {
       const description = 'Test security group';
