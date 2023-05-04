@@ -250,6 +250,7 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.secretPrefix">secretPrefix</a></code> | <code>string \| multi-convention-namer.Namer</code> | Prefix for secrets. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.securityGroups">securityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | Security groups to use for the Aurora cluster. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipAddRotationMultiUser">skipAddRotationMultiUser</a></code> | <code>boolean</code> | When bootstrapping, hold off on creating the `addRotationMultiUser`. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipManagerRotation">skipManagerRotation</a></code> | <code>boolean</code> | Skipping rotation for the manager user's password. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProvisionDatabase">skipProvisionDatabase</a></code> | <code>boolean</code> | Skip provisioning the database? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProxy">skipProxy</a></code> | <code>boolean</code> | By default, we provide a proxy for non-manager users. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipUserProvisioning">skipUserProvisioning</a></code> | <code>boolean</code> | When bootstrapping, hold off on provisioning users in the database. |
@@ -483,6 +484,19 @@ When bootstrapping, hold off on creating the `addRotationMultiUser`.
 
 NOTE: the multiUser strategy relies on a `_clone` user, which is potentially surprising.
 See https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotating-secrets_strategies.html#rotating-secrets-two-users
+
+---
+
+##### `skipManagerRotation`<sup>Optional</sup> <a name="skipManagerRotation" id="@time-loop/cdk-aurora.AuroraProps.property.skipManagerRotation"></a>
+
+```typescript
+public readonly skipManagerRotation: boolean;
+```
+
+- *Type:* boolean
+- *Default:* false
+
+Skipping rotation for the manager user's password.
 
 ---
 
