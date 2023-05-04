@@ -141,9 +141,18 @@ export interface AuroraProps {
   readonly skipUserProvisioning?: boolean;
   /**
    * By default, we provide a proxy for non-manager users.
+   * Note: this causes the addition of the `proxyHost` key in the user secrets.
+   *
    * @default false
    */
   readonly skipProxy?: boolean;
+  /**
+   * Add a read-only proxy for the database?
+   * Note: this causes the addition of the `readProxyHost` key in the user secrets.
+   *
+   * @default true
+   */
+  readonly skipReadProxy?: boolean;
   /**
    * Postgres version
    * Be aware of version limitations
@@ -203,6 +212,7 @@ export class Aurora extends Construct {
   readonly kmsKey: aws_kms.IKey;
   readonly proxy?: aws_rds.DatabaseProxy;
   readonly proxySecurityGroups?: aws_ec2.ISecurityGroup[];
+  readonly readProxy?: aws_rds.DatabaseProxy;
   readonly secrets: aws_rds.DatabaseSecret[];
   readonly securityGroups: aws_ec2.ISecurityGroup[];
   readonly vpcSubnets: aws_ec2.SubnetSelection;
@@ -474,6 +484,32 @@ export class Aurora extends Construct {
       });
     }
 
+    // NOTE: by default this is disabled. We might want to make it enabled by default in the future.
+    if (!props.skipReadProxy === false) {
+      if (props.proxySecurityGroups) {
+        this.proxySecurityGroups = props.proxySecurityGroups;
+      } else {
+        this.proxySecurityGroups = [
+          new aws_ec2.SecurityGroup(this, 'ReadProxySecurityGroup', {
+            vpc: props.vpc,
+            allowAllOutbound: true,
+          }),
+        ];
+      }
+      this.readProxy = new aws_rds.DatabaseProxy(this, 'ReadProxy', {
+        dbProxyName: id.addSuffix(['r', 'o']).pascal, // 'RO' because the cluster adds 'ro' for the reader cluster
+        proxyTarget: aws_rds.ProxyTarget.fromCluster(this.cluster), // FIXME: how do we target the reader cluster?
+        //requireTLS: true, // If we're never allowing connections from outside the VPC, why bother?
+        secrets: this.secrets,
+        securityGroups: this.proxySecurityGroups,
+        vpc: props.vpc,
+      });
+      new CfnOutput(this, 'ReadProxyEndpoint', {
+        exportName: id.addSuffix(['Read', 'Proxy', 'Endpoint']).pascal,
+        value: this.readProxy.endpoint,
+      });
+    }
+
     // We can't provision the users until the database is provisioned,
     // because we need the roles to exist.
     // Also, we need the proxy to be deployed enough that the endpoint is readable.
@@ -482,9 +518,13 @@ export class Aurora extends Construct {
         const rdsUser = rdsUserProvisioner(new Namer([s.userStr]), {
           isWriter: s.userStr === 'writer',
           proxyHost: this.proxy?.endpoint, // Usually a reference is sufficient, but...
+          readProxyHost: this.readProxy?.endpoint,
           userSecretArn: s.secret.secretArn,
         });
-        if (this.proxy) rdsUser.node.addDependency(this.proxy!); // ... because this.proxy optional, we must make an explicit depedency.
+        [this.proxy, this.readProxy].forEach((p) => {
+          // Because the proxies are optional, we must make explicit dependencies.
+          if (p) rdsUser.node.addDependency(p);
+        });
         rdsUser.node.addDependency(this.cluster);
       });
     }

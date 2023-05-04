@@ -21,6 +21,10 @@ export interface RdsUserProvisionerProps {
    * The address of the proxy.
    */
   readonly proxyHost?: string;
+  /**
+   * The address of the read-only proxy.
+   */
+  readonly readProxyHost?: string;
 }
 
 interface NoData {}
@@ -45,29 +49,30 @@ interface ResultProps {
 }
 
 interface CreateUpdateProps {
-  LogicalResourceId: string;
-  logStreamName: string;
-  RequestId: string;
-  StackId: string;
+  readonly LogicalResourceId: string;
+  readonly logStreamName: string;
+  readonly RequestId: string;
+  readonly StackId: string;
 
-  userSecretArn: string;
-  isWriter: boolean;
-  proxyHost?: string;
+  readonly userSecretArn: string;
+  readonly isWriter: boolean;
+  readonly proxyHost?: string;
+  readonly readProxyHost?: string;
 }
 
 export interface SecretsResult {
   /**
    * DB Connection information
    */
-  clientConfig: ClientConfig;
+  readonly clientConfig: ClientConfig;
   /**
    * The username to be provisioned
    */
-  username: string;
+  readonly username: string;
   /**
    * The password to be provisioned
    */
-  password: string;
+  readonly password: string;
 }
 
 enum CfnStatus {
@@ -125,6 +130,7 @@ async function onCreate(
     userSecretArn: event.ResourceProperties.userSecretArn,
     isWriter: event.ResourceProperties.isWriter === 'true',
     proxyHost: event.ResourceProperties.proxyHost,
+    readProxyHost: event.ResourceProperties.readonlyProxyHost,
   });
 }
 
@@ -148,6 +154,7 @@ const onUpdate = async (
     userSecretArn: event.ResourceProperties.userSecretArn,
     isWriter: event.ResourceProperties.isWriter === 'true',
     proxyHost: event.ResourceProperties.proxyHost,
+    readProxyHost: event.ResourceProperties.readonlyProxyHost,
   });
 };
 
@@ -212,7 +219,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   let secretResult: SecretsResult;
   try {
     console.log('Fetching credentials from Secrets Manager');
-    secretResult = await m.fetchAndConformSecrets(managerSecretArn, props.userSecretArn, props.proxyHost);
+    secretResult = await m.fetchAndConformSecrets(managerSecretArn, props.userSecretArn, props);
   } catch (err) {
     return resultFactory({
       PhysicalResourceId: 'none',
@@ -263,6 +270,12 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   });
 }
 
+export interface FetchAndConformSecretsProps {
+  proxyHost?: string,
+  readProxyHost?: string,
+}
+
+
 /**
  * This class exists only to work around the problem of mocking / stubbing out
  * these methods when testing the handler.
@@ -283,7 +296,7 @@ export class Methods {
   public async fetchAndConformSecrets(
     managerSecretArn: string,
     userSecretArn: string,
-    proxyHost?: string,
+    props?: FetchAndConformSecretsProps,
   ): Promise<SecretsResult> {
     const secretsManager = new awsSdk.SecretsManager();
 
@@ -319,7 +332,7 @@ export class Methods {
       updatedUserSecret = true;
     }
 
-    if (!proxyHost) {
+    if (!props?.proxyHost) {
       if (userSecret.hasOwnProperty('proxyHost')) {
         console.log('Updating user secret to remove proxyHost since we do not have proxyHost');
         delete userSecret.proxyHost;
@@ -328,12 +341,31 @@ export class Methods {
     } else {
       if (!userSecret.hasOwnProperty('proxyHost')) {
         console.log('Updating user secret to add proxyHost');
-        userSecret.proxyHost = proxyHost;
+        userSecret.proxyHost = props.proxyHost;
         updatedUserSecret = true;
       }
-      if (userSecret.proxyHost != proxyHost) {
+      if (userSecret.proxyHost != props.proxyHost) {
         console.log('Updating user secret, proxyHost changed');
-        userSecret.proxyHost = proxyHost;
+        userSecret.proxyHost = props.proxyHost;
+        updatedUserSecret = true;
+      }
+    }
+
+    if (!props?.readProxyHost) {
+      if (!userSecret.hasOwnProperty('readProxyHost')) {
+        console.log('Updating user secret to remove readProxyHost since we do not have readProxyHost');
+        delete userSecret.readProxyHost;
+        updatedUserSecret = true;
+      }
+    } else {
+      if (!userSecret.hasOwnProperty('readProxyHost')) {
+        console.log('Updating user secret to add readProxyHost');
+        userSecret.readProxyHost = props.readProxyHost;
+        updatedUserSecret = true;
+      }
+      if (userSecret.readProxyHost != props.readProxyHost) {
+        console.log('Updating user secret, readProxyHost changed');
+        userSecret.readProxyHost = props.readProxyHost;
         updatedUserSecret = true;
       }
     }

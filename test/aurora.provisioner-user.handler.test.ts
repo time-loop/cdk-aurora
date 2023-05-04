@@ -53,6 +53,7 @@ describe('handler', () => {
     userSecretArn: 'fakeUserSecretArn',
     isWriter: true,
     proxyHost: 'fakeProxyHost',
+    readProxyHost: 'fakeReadProxyHost',
   };
 
   const eventBase: CloudFormationCustomResourceEventCommon = {

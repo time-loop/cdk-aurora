@@ -82,7 +82,6 @@ describe('Aurora', () => {
         });
       });
     });
-
     it('databaseName', () => {
       template.hasResourceProperties('AWS::RDS::DBCluster', {
         DatabaseName: Match.absent(), // we manage database creation via the custom resources
@@ -95,10 +94,10 @@ describe('Aurora', () => {
         EnablePerformanceInsights: true,
       });
     });
-
     it('proxyName', () => {
       template.hasResourceProperties('AWS::RDS::DBProxy', { DBProxyName: 'Test' });
     });
+    it.todo('proxy target is the cluster');
     it('removalPolicy', () => {
       template.hasResource('AWS::RDS::DBCluster', {
         UpdateReplacePolicy: 'Snapshot',
@@ -270,6 +269,12 @@ describe('Aurora', () => {
       createAurora({ ...defaultAuroraProps, skipProxy: true });
       template.resourceCountIs('AWS::RDS::DBProxy', 0);
     });
+    it('skipReadProxy false', () => {
+      createAurora({ ...defaultAuroraProps, skipProxy: true, skipReadProxy: false });
+      template.resourceCountIs('AWS::RDS::DBProxy', 1);
+      template.hasResourceProperties('AWS::RDS::DBProxy', { DBProxyName: 'TestRO' });
+    });
+    it.todo('readProxy target is the RO cluster');
     it('skipUserProvisioning', () => {
       createAurora({ ...defaultAuroraProps, skipUserProvisioning: true });
       template.resourceCountIs('Custom::RdsUser', 0);

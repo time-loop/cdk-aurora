@@ -196,7 +196,7 @@ describe('fetchAndConformSecrets', () => {
           host: 'userHost',
         }),
       });
-      const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn', 'fakeProxyHost');
+      const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn', { proxyHost: 'fakeProxyHost'});
       expect(r).toEqual(standardResult);
       expect(putSecretValueStub.callCount).toEqual(1);
       expect(putSecretValueStub.firstCall.args[0]).toEqual({
@@ -216,13 +216,71 @@ describe('fetchAndConformSecrets', () => {
           proxyHost: 'oldProxyHost',
         }),
       });
-      const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn', 'fakeProxyHost');
+      const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn',{ proxyHost: 'fakeProxyHost'});
       expect(r).toEqual(standardResult);
       expect(putSecretValueStub.callCount).toEqual(1);
       expect(putSecretValueStub.firstCall.args[0]).toEqual({
         SecretId: 'fakeUserSecretArn',
         SecretString:
           '{"password":"userPassword","username":"userUsername","engine":"userEngine","host":"userHost","proxyHost":"fakeProxyHost"}',
+      });
+    });
+  });
+
+
+  describe('with readProxy', () => {
+    it('updates user secret to remove readProxyHost if no readProxyHost', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          engine: 'userEngine',
+          host: 'userHost',
+          proxyHost: 'proxyHost',
+          readProxyHost: 'shouldNotBeHere',
+        }),
+      });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn');
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.callCount).toEqual(1);
+    });
+
+    it('updates user secret when missing readProxy', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          engine: 'userEngine',
+          host: 'userHost',
+        }),
+      });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn', { readProxyHost: 'fakeReadProxyHost'});
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.callCount).toEqual(1);
+      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+        SecretId: 'fakeUserSecretArn',
+        SecretString:
+          '{"password":"userPassword","username":"userUsername","engine":"userEngine","host":"userHost","readProxyHost":"fakeReadProxyHost"}',
+      });
+    });
+
+    it('updates user secret when readProxy changed', async () => {
+      getSecretValueStub.onSecondCall().resolves({
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          engine: 'userEngine',
+          host: 'userHost',
+          proxyHost: 'oldProxyHost',
+        }),
+      });
+      const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn',  { readProxyHost: 'fakeReadProxyHost'});
+      expect(r).toEqual(standardResult);
+      expect(putSecretValueStub.callCount).toEqual(1);
+      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+        SecretId: 'fakeUserSecretArn',
+        SecretString:
+          '{"password":"userPassword","username":"userUsername","engine":"userEngine","host":"userHost","readProxyHost":"fakeReadProxyHost"}',
       });
     });
   });
