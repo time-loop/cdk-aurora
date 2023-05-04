@@ -104,6 +104,11 @@ export interface AuroraProps {
    */
   readonly secretPrefix?: string | Namer;
   /**
+   * Skipping rotation for the manager user's password.
+   * @default - false
+   */
+  readonly skipManagerRotation?: boolean;
+  /**
    * When bootstrapping, hold off on creating the `addRotationMultiUser`.
    * NOTE: the multiUser strategy relies on a `_clone` user, which is potentially surprising.
    * See https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotating-secrets_strategies.html#rotating-secrets-two-users
@@ -332,10 +337,12 @@ export class Aurora extends Construct {
       this.activityStreamArn = resource.getAttString('PhysicalResourceId');
     }
 
-    const managerRotation = this.cluster.addRotationSingleUser();
-    // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
-    const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
-    managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
+    if (!props.skipManagerRotation) {
+      const managerRotation = this.cluster.addRotationSingleUser();
+      // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
+      const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
+      managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
+    }
 
     const provisionerProps: aws_lambda_nodejs.NodejsFunctionProps = {
       bundling: {
