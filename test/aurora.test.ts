@@ -190,12 +190,6 @@ describe('Aurora', () => {
           PerformanceInsightsRetentionPeriod: PerformanceInsightRetention.LONG_TERM,
         });
       });
-      it.each<number>([31, 62, 93])('%i days', (days) => {
-        createAurora({ ...defaultAuroraProps, performanceInsightRetention: days });
-        template.hasResourceProperties('AWS::RDS::DBInstance', {
-          PerformanceInsightsRetentionPeriod: days,
-        });
-      });
     });
     it('proxySecurityGroups', () => {
       const description = 'Test security group';

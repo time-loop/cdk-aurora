@@ -72,11 +72,9 @@ export interface AuroraProps {
    * Free tier is 7 days.
    * See: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbinstance.html#cfn-rds-dbinstance-performanceinsightsretentionperiod
    *
-   * If you use the number hack-around, it must be 31 * n where n is from 1 to 23.
-   *
-   * @default - passthrough (was 7 days as of cdk 2.77.0)
+   * @default - passthrough (was 7 days as of cdk 2.78.0)
    */
-  readonly performanceInsightRetention?: aws_rds.PerformanceInsightRetention | number;
+  readonly performanceInsightRetention?: aws_rds.PerformanceInsightRetention;
   /**
    * Security groups to use for the RDS Proxy.
    * @default - create a single new security group to use for the proxy.
@@ -263,7 +261,7 @@ export class Aurora extends Construct {
       instanceProps: {
         instanceType,
         performanceInsightEncryptionKey: encryptionKey,
-        performanceInsightRetention: props.performanceInsightRetention as aws_rds.PerformanceInsightRetention,
+        performanceInsightRetention: props.performanceInsightRetention,
         securityGroups: this.securityGroups,
         vpc: props.vpc,
         vpcSubnets,
