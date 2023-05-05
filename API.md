@@ -374,7 +374,7 @@ public readonly lambdaLogRetention: RetentionDays;
 ```
 
 - *Type:* aws-cdk-lib.aws_logs.RetentionDays
-- *Default:* aws_logs.RetentionDays.TWO_YEARS
+- *Default:* aws_logs.RetentionDays.THREE_MONTHS
 
 How long to retain logs published by provisioning lambdas.
 
