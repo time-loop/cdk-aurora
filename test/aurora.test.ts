@@ -12,9 +12,9 @@ import {
   Vpc,
 } from 'aws-cdk-lib/aws-ec2';
 import { CfnKey, IKey, Key } from 'aws-cdk-lib/aws-kms';
+import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { AuroraPostgresEngineVersion, PerformanceInsightRetention } from 'aws-cdk-lib/aws-rds';
 import { Namer } from 'multi-convention-namer';
-// import { inspect } from 'util';
 
 import { Aurora, AuroraProps } from '../src';
 
@@ -182,6 +182,25 @@ describe('Aurora', () => {
       template.hasResourceProperties('AWS::RDS::DBInstance', { DBInstanceClass: 'db.r5.24xlarge' });
       const annotation = Annotations.fromStack(stack);
       annotation.hasWarning('*', Match.stringLikeRegexp('is not ARM64'));
+    });
+    it('lambdaLogRetention', () => {
+      const lambdaLogRetention = RetentionDays.ONE_WEEK;
+      createAurora({ ...defaultAuroraProps, lambdaLogRetention });
+
+      // Find our provisioning lambdas
+      const lambdas = template.findResources('AWS::Lambda::Function', {
+        Environment: { MANAGER_SECRET_ARN: { Ref: Match.anyValue() } }, // this identifies our provisioning lambdas
+      });
+
+      // Every provisioning lambda should have a log retention associated with it, with a matching log group name
+      Object.keys(lambdas).forEach((k) => {
+        template.hasResourceProperties('Custom::LogRetention', {
+          RetentionInDays: lambdaLogRetention,
+          LogGroupName: {
+            'Fn::Join': Match.arrayEquals(['', Match.arrayWith(['/aws/lambda/', { Ref: k }])]),
+          },
+        });
+      });
     });
     describe('performanceInsightRetention', () => {
       it('LONG_TERM', () => {

@@ -48,6 +48,13 @@ export interface AuroraProps {
    */
   readonly cloudwatchLogsRetention?: aws_logs.RetentionDays;
   /**
+   * How long to retain logs published by provisioning lambdas.
+   * These are extremely low volume, and super handy to have around.
+   *
+   * @default aws_logs.RetentionDays.THREE_MONTHS
+   */
+  readonly lambdaLogRetention?: aws_logs.RetentionDays;
+  /**
    * Name the database you would like a database created.
    * This also will target which database has default grants applied for users.
    */
@@ -85,6 +92,8 @@ export interface AuroraProps {
    */
   readonly removalPolicy?: RemovalPolicy;
   /**
+   * RDS backup retention.
+   *
    * @default Duration.days(1) This should pass through, but nope. So, we're duplicating the default.
    */
   readonly retention?: Duration;
@@ -299,7 +308,7 @@ export class Aurora extends Construct {
           bundling: { minify: true },
           entry: join(__dirname, 'aurora.activity-stream.ts'),
           handler,
-          logRetention: aws_logs.RetentionDays.ONE_WEEK,
+          logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.THREE_MONTHS,
           tracing: aws_lambda.Tracing.ACTIVE,
           vpc: props.vpc,
           vpcSubnets,
@@ -320,7 +329,7 @@ export class Aurora extends Construct {
       }
 
       const activityStreamProvider = new custom_resources.Provider(this, 'ActivityStreamProvider', {
-        logRetention: aws_logs.RetentionDays.ONE_WEEK,
+        logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.TWO_YEARS,
         onEventHandler: activityStreamHandler('OnEvent'),
         isCompleteHandler: activityStreamHandler('IsComplete'),
       });
@@ -353,7 +362,7 @@ export class Aurora extends Construct {
       environment: {
         MANAGER_SECRET_ARN: this.cluster.secret!.secretArn,
       },
-      logRetention: aws_logs.RetentionDays.ONE_WEEK,
+      logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.TWO_YEARS,
       timeout: Duration.minutes(14), // since we're retrying connections, be patient.
       tracing: aws_lambda.Tracing.ACTIVE,
       vpc: props.vpc,
@@ -374,7 +383,7 @@ export class Aurora extends Construct {
     this.cluster.connections.allowDefaultPortFrom(databaseProvisioner, 'Database provisioning lambda');
 
     const databaseProvider = new custom_resources.Provider(this, 'DatabaseProvider', {
-      logRetention: aws_logs.RetentionDays.ONE_WEEK,
+      logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.TWO_YEARS,
       onEventHandler: databaseProvisioner,
     });
 
@@ -407,7 +416,7 @@ export class Aurora extends Construct {
     this.cluster.connections.allowDefaultPortFrom(userProvisioner, 'User provisioning lambda');
 
     const userProvider = new custom_resources.Provider(this, 'UserProvider', {
-      logRetention: aws_logs.RetentionDays.ONE_WEEK,
+      logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.TWO_YEARS,
       onEventHandler: userProvisioner,
     });
 
