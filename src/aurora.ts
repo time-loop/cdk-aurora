@@ -51,7 +51,7 @@ export interface AuroraProps {
    * How long to retain logs published by provisioning lambdas.
    * These are extremely low volume, and super handy to have around.
    *
-   * @default aws_logs.RetentionDays.TWO_YEARS
+   * @default aws_logs.RetentionDays.THREE_MONTHS
    */
   readonly lambdaLogRetention?: aws_logs.RetentionDays;
   /**
@@ -308,7 +308,7 @@ export class Aurora extends Construct {
           bundling: { minify: true },
           entry: join(__dirname, 'aurora.activity-stream.ts'),
           handler,
-          logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.TWO_YEARS,
+          logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.THREE_MONTHS,
           tracing: aws_lambda.Tracing.ACTIVE,
           vpc: props.vpc,
           vpcSubnets,
