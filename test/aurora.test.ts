@@ -189,7 +189,7 @@ describe('Aurora', () => {
 
       // Find our provisioning lambdas
       const lambdas = template.findResources('AWS::Lambda::Function', {
-        Environment: { MANAGER_SECRET_ARN: { Ref: Match.anyValue() }}, // this identifies our provisioning lambdas
+        Environment: { MANAGER_SECRET_ARN: { Ref: Match.anyValue() } }, // this identifies our provisioning lambdas
       });
 
       // Every provisioning lambda should have a log retention associated with it, with a matching log group name
