@@ -357,7 +357,7 @@ export class Aurora extends Construct {
       this.activityStreamArn = resource.getAttString('PhysicalResourceId');
     }
 
-    const passwordRotationIntervalInDays = props.passwordRotationIntervalInDays ?? 180;
+    const passwordRotationIntervalInDays = props.passwordRotationIntervalInDays ?? 90;
     if (!props.skipManagerRotation) {
       const managerRotation = this.cluster.addRotationSingleUser({
         automaticallyAfter: Duration.days(passwordRotationIntervalInDays),
