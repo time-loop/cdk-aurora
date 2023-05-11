@@ -125,6 +125,11 @@ export interface AuroraProps {
    */
   readonly skipAddRotationMultiUser?: boolean;
   /**
+   * Days between password rotations for the users.
+   * @default 180
+   */
+  readonly passwordRotationIntervalInDays?: number;
+  /**
    * Skip provisioning the database?
    * Useful for bootstrapping stacks to get the majority of resources in place.
    * The db provisioner will:
@@ -352,8 +357,11 @@ export class Aurora extends Construct {
       this.activityStreamArn = resource.getAttString('PhysicalResourceId');
     }
 
+    const passwordRotationIntervalInDays = props.passwordRotationIntervalInDays ?? 180;
     if (!props.skipManagerRotation) {
-      const managerRotation = this.cluster.addRotationSingleUser();
+      const managerRotation = this.cluster.addRotationSingleUser({
+        automaticallyAfter: Duration.days(passwordRotationIntervalInDays),
+      });
       // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
       const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
       managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
@@ -459,7 +467,10 @@ export class Aurora extends Construct {
       );
 
       if (!props.skipAddRotationMultiUser) {
-        const rotation = this.cluster.addRotationMultiUser(user.pascal, { secret });
+        const rotation = this.cluster.addRotationMultiUser(user.pascal, {
+          secret,
+          automaticallyAfter: Duration.days(passwordRotationIntervalInDays),
+        });
         // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
         const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;
         sarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
