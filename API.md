@@ -242,6 +242,7 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instances">instances</a></code> | <code>number</code> | How many instances? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instanceType">instanceType</a></code> | <code>aws-cdk-lib.aws_ec2.InstanceType</code> | https://aws.amazon.com/blogs/aws/new-amazon-rds-on-graviton2-processors/ says we can use Graviton2 processors. Yay! |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.lambdaLogRetention">lambdaLogRetention</a></code> | <code>aws-cdk-lib.aws_logs.RetentionDays</code> | How long to retain logs published by provisioning lambdas. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.passwordRotationIntervalInDays">passwordRotationIntervalInDays</a></code> | <code>number</code> | Days between password rotations for the users. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.performanceInsightRetention">performanceInsightRetention</a></code> | <code>aws-cdk-lib.aws_rds.PerformanceInsightRetention</code> | How long to retain performance insights data in days. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.postgresEngineVersion">postgresEngineVersion</a></code> | <code>aws-cdk-lib.aws_rds.AuroraPostgresEngineVersion</code> | Postgres version Be aware of version limitations See https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraFeaturesRegionsDBEngines.grids.html#Concepts.Aurora_Fea_Regions_DB-eng.Feature.RDS_Proxy. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.proxySecurityGroups">proxySecurityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | Security groups to use for the RDS Proxy. |
@@ -252,7 +253,6 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.securityGroups">securityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | Security groups to use for the Aurora cluster. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipAddRotationMultiUser">skipAddRotationMultiUser</a></code> | <code>boolean</code> | When bootstrapping, hold off on creating the `addRotationMultiUser`. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipManagerRotation">skipManagerRotation</a></code> | <code>boolean</code> | Skipping rotation for the manager user's password. |
-| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.passwordRotationIntervalInDays">passwordRotationIntervalInDays</a></code> | <code>number</code> | Days between password rotations for the users. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProvisionDatabase">skipProvisionDatabase</a></code> | <code>boolean</code> | Skip provisioning the database? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProxy">skipProxy</a></code> | <code>boolean</code> | By default, we provide a proxy for non-manager users. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipUserProvisioning">skipUserProvisioning</a></code> | <code>boolean</code> | When bootstrapping, hold off on provisioning users in the database. |
@@ -380,6 +380,19 @@ public readonly lambdaLogRetention: RetentionDays;
 How long to retain logs published by provisioning lambdas.
 
 These are extremely low volume, and super handy to have around.
+
+---
+
+##### `passwordRotationIntervalInDays`<sup>Optional</sup> <a name="passwordRotationIntervalInDays" id="@time-loop/cdk-aurora.AuroraProps.property.passwordRotationIntervalInDays"></a>
+
+```typescript
+public readonly passwordRotationIntervalInDays: number;
+```
+
+- *Type:* number
+- *Default:* 45
+
+Days between password rotations for the users.
 
 ---
 
