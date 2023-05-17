@@ -390,7 +390,7 @@ public readonly passwordRotationIntervalInDays: number;
 ```
 
 - *Type:* number
-- *Default:* 45
+- *Default:* fallthrough to aws-cdk-lib, currently 30 days
 
 Days between password rotations for the users.
 

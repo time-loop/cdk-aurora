@@ -126,7 +126,7 @@ export interface AuroraProps {
   readonly skipAddRotationMultiUser?: boolean;
   /**
    * Days between password rotations for the users.
-   * @default 45
+   * @default - fallthrough to aws-cdk-lib, currently 30 days
    */
   readonly passwordRotationIntervalInDays?: number;
   /**
@@ -357,10 +357,16 @@ export class Aurora extends Construct {
       this.activityStreamArn = resource.getAttString('PhysicalResourceId');
     }
 
-    const passwordRotationIntervalInDays = props.passwordRotationIntervalInDays ?? 90;
+    const passwordRotationIntervalInDays = props.passwordRotationIntervalInDays ?? 0;
+    const passwordRotationOptions =
+      passwordRotationIntervalInDays > 0
+        ? {
+            automaticallyAfter: Duration.days(passwordRotationIntervalInDays),
+          }
+        : {};
     if (!props.skipManagerRotation) {
       const managerRotation = this.cluster.addRotationSingleUser({
-        automaticallyAfter: Duration.days(passwordRotationIntervalInDays),
+        ...passwordRotationOptions,
       });
       // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
       const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
@@ -469,7 +475,7 @@ export class Aurora extends Construct {
       if (!props.skipAddRotationMultiUser) {
         const rotation = this.cluster.addRotationMultiUser(user.pascal, {
           secret,
-          automaticallyAfter: Duration.days(passwordRotationIntervalInDays),
+          ...passwordRotationOptions,
         });
         // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
         const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;
