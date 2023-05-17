@@ -126,7 +126,7 @@ export interface AuroraProps {
   readonly skipAddRotationMultiUser?: boolean;
   /**
    * Days between password rotations for the users.
-   * @default 180
+   * @default 45
    */
   readonly passwordRotationIntervalInDays?: number;
   /**
