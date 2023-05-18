@@ -125,10 +125,11 @@ export interface AuroraProps {
    */
   readonly skipAddRotationMultiUser?: boolean;
   /**
-   * Days between password rotations for the users.
-   * @default - fallthrough to aws-cdk-lib, currently 30 days
+   * Common password rotation options. See
+   * https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds.CommonRotationUserOptions.html
+   * @default - none, AWS defaults to 30 day rotation
    */
-  readonly passwordRotationIntervalInDays?: number;
+  readonly commonRotationUserOptions?: aws_rds.CommonRotationUserOptions;
   /**
    * Skip provisioning the database?
    * Useful for bootstrapping stacks to get the majority of resources in place.
@@ -357,17 +358,8 @@ export class Aurora extends Construct {
       this.activityStreamArn = resource.getAttString('PhysicalResourceId');
     }
 
-    const passwordRotationIntervalInDays = props.passwordRotationIntervalInDays ?? 0;
-    const passwordRotationOptions =
-      passwordRotationIntervalInDays > 0
-        ? {
-            automaticallyAfter: Duration.days(passwordRotationIntervalInDays),
-          }
-        : {};
     if (!props.skipManagerRotation) {
-      const managerRotation = this.cluster.addRotationSingleUser({
-        ...passwordRotationOptions,
-      });
+      const managerRotation = this.cluster.addRotationSingleUser(props.commonRotationUserOptions);
       // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
       const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
       managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
@@ -475,7 +467,7 @@ export class Aurora extends Construct {
       if (!props.skipAddRotationMultiUser) {
         const rotation = this.cluster.addRotationMultiUser(user.pascal, {
           secret,
-          ...passwordRotationOptions,
+          ...props.commonRotationUserOptions,
         });
         // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
         const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;

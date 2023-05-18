@@ -280,7 +280,7 @@ describe('Aurora', () => {
       ['AWS::SecretsManager::RotationSchedule'].forEach((r) => template.resourceCountIs(r, 1)); // Only manager is rotated
     });
     it('passwordRotationIntervalInDays', () => {
-      createAurora({ ...defaultAuroraProps, passwordRotationIntervalInDays: 10 });
+      createAurora({ ...defaultAuroraProps, commonRotationUserOptions: { automaticallyAfter: Duration.days(10) } });
       template.hasResourceProperties('AWS::SecretsManager::RotationSchedule', {
         RotationRules: { AutomaticallyAfterDays: 10 },
       });
