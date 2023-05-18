@@ -279,6 +279,12 @@ describe('Aurora', () => {
       ['AWS::SecretsManager::Secret'].forEach((r) => template.resourceCountIs(r, 3)); // Still have 3 users
       ['AWS::SecretsManager::RotationSchedule'].forEach((r) => template.resourceCountIs(r, 1)); // Only manager is rotated
     });
+    it('passwordRotationIntervalInDays', () => {
+      createAurora({ ...defaultAuroraProps, commonRotationUserOptions: { automaticallyAfter: Duration.days(10) } });
+      template.hasResourceProperties('AWS::SecretsManager::RotationSchedule', {
+        RotationRules: { AutomaticallyAfterDays: 10 },
+      });
+    });
     it('skipProvisionDatabase', () => {
       createAurora({ ...defaultAuroraProps, skipProvisionDatabase: true });
       template.resourceCountIs('Custom::AuroraDatabase', 0);
