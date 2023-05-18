@@ -185,3 +185,45 @@ psql --host localhost --port "$LOCAL_PORT" --username "$DBUSER" clickup
 
 ssh -N -f -i "$SSH_KEY" -L "$LOCAL_PORT:$HOST:$PORT" "ec2-user@$JUMP_INSTANCE_ID"
 ```
+
+## Troubleshooting
+
+### DB Provisioner
+
+Did your DB provisioner not run?
+Check the Lambda's logfiles, you should see the grants it ran.
+To manually fix issues, you can run the following commands:
+
+```
+# Show database connect privs
+\l
+
+# grant db connect privs
+GRANT CONNECT ON DATABASE foo TO r_reader
+GRANT CONNECT ON DATABASE foo TO r_writer
+
+# Show schema privs
+\dn+
+
+# Grant access to schemas
+GRANT USAGE ON SCHEMA task_mgmt TO r_reader;
+GRANT USAGE ON SCHEMA task_mgmt TO r_writer;
+
+# Show default privs
+\ddp
+
+# Add missing defaults
+ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO r_reader;
+ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO r_writer;
+
+ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO r_reader;
+ALTER DEFAULT PRIVILEGES GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO r_writer;
+
+# Show table privs
+SET search_path TO task_mgmt;
+\dp
+
+# Fix perms for tables which should have been defaulted:
+grant select on all tables in schema task_mgmt to r_reader;
+grant select, insert, update, delete on all tables in schema task_mgmt to r_writer;
+```
