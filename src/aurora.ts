@@ -125,6 +125,12 @@ export interface AuroraProps {
    */
   readonly skipAddRotationMultiUser?: boolean;
   /**
+   * Common password rotation options. See
+   * https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds.CommonRotationUserOptions.html
+   * @default - none, AWS defaults to 30 day rotation
+   */
+  readonly commonRotationUserOptions?: aws_rds.CommonRotationUserOptions;
+  /**
    * Skip provisioning the database?
    * Useful for bootstrapping stacks to get the majority of resources in place.
    * The db provisioner will:
@@ -353,7 +359,7 @@ export class Aurora extends Construct {
     }
 
     if (!props.skipManagerRotation) {
-      const managerRotation = this.cluster.addRotationSingleUser();
+      const managerRotation = this.cluster.addRotationSingleUser(props.commonRotationUserOptions);
       // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
       const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
       managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
@@ -459,7 +465,10 @@ export class Aurora extends Construct {
       );
 
       if (!props.skipAddRotationMultiUser) {
-        const rotation = this.cluster.addRotationMultiUser(user.pascal, { secret });
+        const rotation = this.cluster.addRotationMultiUser(user.pascal, {
+          secret,
+          ...props.commonRotationUserOptions,
+        });
         // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
         const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;
         sarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
