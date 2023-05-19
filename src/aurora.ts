@@ -48,6 +48,13 @@ export interface AuroraProps {
    */
   readonly cloudwatchLogsRetention?: aws_logs.RetentionDays;
   /**
+   * How long to retain logs published by provisioning lambdas.
+   * These are extremely low volume, and super handy to have around.
+   *
+   * @default aws_logs.RetentionDays.THREE_MONTHS
+   */
+  readonly lambdaLogRetention?: aws_logs.RetentionDays;
+  /**
    * Name the database you would like a database created.
    * This also will target which database has default grants applied for users.
    */
@@ -68,6 +75,14 @@ export interface AuroraProps {
    */
   readonly kmsKey: aws_kms.IKey;
   /**
+   * How long to retain performance insights data in days.
+   * Free tier is 7 days.
+   * See: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbinstance.html#cfn-rds-dbinstance-performanceinsightsretentionperiod
+   *
+   * @default - passthrough (was 7 days as of cdk 2.78.0)
+   */
+  readonly performanceInsightRetention?: aws_rds.PerformanceInsightRetention;
+  /**
    * Security groups to use for the RDS Proxy.
    * @default - create a single new security group to use for the proxy.
    */
@@ -77,6 +92,8 @@ export interface AuroraProps {
    */
   readonly removalPolicy?: RemovalPolicy;
   /**
+   * RDS backup retention.
+   *
    * @default Duration.days(1) This should pass through, but nope. So, we're duplicating the default.
    */
   readonly retention?: Duration;
@@ -96,12 +113,23 @@ export interface AuroraProps {
    */
   readonly secretPrefix?: string | Namer;
   /**
+   * Skipping rotation for the manager user's password.
+   * @default - false
+   */
+  readonly skipManagerRotation?: boolean;
+  /**
    * When bootstrapping, hold off on creating the `addRotationMultiUser`.
    * NOTE: the multiUser strategy relies on a `_clone` user, which is potentially surprising.
    * See https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotating-secrets_strategies.html#rotating-secrets-two-users
    * @default false
    */
   readonly skipAddRotationMultiUser?: boolean;
+  /**
+   * Common password rotation options. See
+   * https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds.CommonRotationUserOptions.html
+   * @default - none, AWS defaults to 30 day rotation
+   */
+  readonly commonRotationUserOptions?: aws_rds.CommonRotationUserOptions;
   /**
    * Skip provisioning the database?
    * Useful for bootstrapping stacks to get the majority of resources in place.
@@ -200,6 +228,12 @@ export class Aurora extends Construct {
   constructor(scope: Construct, id: Namer, props: AuroraProps) {
     super(scope, id.pascal);
 
+    if (!props.skipAddRotationMultiUser && props.skipProxy) {
+      Annotations.of(this).addWarning(
+        'AWS RDS Proxy is fundamentally incompatible with the MultiUser rotation scheme. Please see README.md for more information.',
+      );
+    }
+
     const schemas = props.schemas ?? ['public'];
 
     const encryptionKey = (this.kmsKey = props.kmsKey);
@@ -252,6 +286,8 @@ export class Aurora extends Construct {
       instanceIdentifierBase: id.pascal,
       instanceProps: {
         instanceType,
+        performanceInsightEncryptionKey: encryptionKey,
+        performanceInsightRetention: props.performanceInsightRetention,
         securityGroups: this.securityGroups,
         vpc: props.vpc,
         vpcSubnets,
@@ -284,7 +320,7 @@ export class Aurora extends Construct {
           bundling: { minify: true },
           entry: join(__dirname, 'aurora.activity-stream.ts'),
           handler,
-          logRetention: aws_logs.RetentionDays.ONE_WEEK,
+          logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.THREE_MONTHS,
           tracing: aws_lambda.Tracing.ACTIVE,
           vpc: props.vpc,
           vpcSubnets,
@@ -305,7 +341,7 @@ export class Aurora extends Construct {
       }
 
       const activityStreamProvider = new custom_resources.Provider(this, 'ActivityStreamProvider', {
-        logRetention: aws_logs.RetentionDays.ONE_WEEK,
+        logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.TWO_YEARS,
         onEventHandler: activityStreamHandler('OnEvent'),
         isCompleteHandler: activityStreamHandler('IsComplete'),
       });
@@ -322,10 +358,12 @@ export class Aurora extends Construct {
       this.activityStreamArn = resource.getAttString('PhysicalResourceId');
     }
 
-    const managerRotation = this.cluster.addRotationSingleUser();
-    // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
-    const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
-    managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
+    if (!props.skipManagerRotation) {
+      const managerRotation = this.cluster.addRotationSingleUser(props.commonRotationUserOptions);
+      // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
+      const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
+      managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
+    }
 
     const provisionerProps: aws_lambda_nodejs.NodejsFunctionProps = {
       bundling: {
@@ -336,7 +374,7 @@ export class Aurora extends Construct {
       environment: {
         MANAGER_SECRET_ARN: this.cluster.secret!.secretArn,
       },
-      logRetention: aws_logs.RetentionDays.ONE_WEEK,
+      logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.TWO_YEARS,
       timeout: Duration.minutes(14), // since we're retrying connections, be patient.
       tracing: aws_lambda.Tracing.ACTIVE,
       vpc: props.vpc,
@@ -357,7 +395,7 @@ export class Aurora extends Construct {
     this.cluster.connections.allowDefaultPortFrom(databaseProvisioner, 'Database provisioning lambda');
 
     const databaseProvider = new custom_resources.Provider(this, 'DatabaseProvider', {
-      logRetention: aws_logs.RetentionDays.ONE_WEEK,
+      logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.TWO_YEARS,
       onEventHandler: databaseProvisioner,
     });
 
@@ -390,7 +428,7 @@ export class Aurora extends Construct {
     this.cluster.connections.allowDefaultPortFrom(userProvisioner, 'User provisioning lambda');
 
     const userProvider = new custom_resources.Provider(this, 'UserProvider', {
-      logRetention: aws_logs.RetentionDays.ONE_WEEK,
+      logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.TWO_YEARS,
       onEventHandler: userProvisioner,
     });
 
@@ -427,7 +465,10 @@ export class Aurora extends Construct {
       );
 
       if (!props.skipAddRotationMultiUser) {
-        const rotation = this.cluster.addRotationMultiUser(user.pascal, { secret });
+        const rotation = this.cluster.addRotationMultiUser(user.pascal, {
+          secret,
+          ...props.commonRotationUserOptions,
+        });
         // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
         const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;
         sarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);

@@ -2,6 +2,38 @@
 
 # cdk-aurora
 
+## WARNINGS
+
+### Proxy / Multiuser rotation incompatibility
+
+The multiuser rotation scheme works by having two actual user roles for each "user".
+The second user role is just the original with `_clone` appended to the name.
+For this discussion we'll call them `user` and `user_clone`.
+
+At any given time, the SecretsManager secret has the name and password for one of these two users.
+When the rotation lambda is triggered, it pulls the secret to find out which user is currently active.
+Next it generates a new password for the inactive user and updates it in the database.
+Finally, it updates the secret to swap users and provides the newly activated user's password.
+See https://aws.amazon.com/blogs/database/multi-user-secrets-rotation-for-amazon-rds/ for details.
+
+Here's an example of a rotation:
+Let's assume that `user_clone` is currently active.
+- generate a new password and assign it to `user` in the database.
+- update Secret to have `user` as the active user and provide the new password.
+
+The application always, even if it fetched the secret several days ago, can connect to the database.
+The whole point of this approach is to provide a window of opportunity for the application to update it's connection string.
+
+MEANWHILE
+
+RDS Proxy receives a list of SecretsManager secrets for access management:
+https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds.DatabaseProxy.html#secrets
+
+When the rotation happens, the secret is updated.
+RDS Proxy says "ok, so, `user_clone` is no longer allowed to connect. Instead `user` is allowed to connect."
+Which makes perfect sense, except... the application still wants to connect as `user_clone`.
+The "window of opportunity" has been slammed closed and we have effectively the "single user rotation" pattern.
+
 ## Example deploy with connection via JumpHost
 
 ```ts
@@ -152,4 +184,46 @@ psql --host localhost --port "$LOCAL_PORT" --username "$DBUSER" clickup
 # You can put LOCAL_PORT=5432 if don't already have postgres running locally.
 
 ssh -N -f -i "$SSH_KEY" -L "$LOCAL_PORT:$HOST:$PORT" "ec2-user@$JUMP_INSTANCE_ID"
+```
+
+## Troubleshooting
+
+### DB Provisioner
+
+Did your DB provisioner not run?
+Check the Lambda's logfiles, you should see the grants it ran.
+To manually fix issues, you can run the following commands:
+
+```
+# Show database connect privs
+\l
+
+# grant db connect privs
+GRANT CONNECT ON DATABASE foo TO r_reader
+GRANT CONNECT ON DATABASE foo TO r_writer
+
+# Show schema privs
+\dn+
+
+# Grant access to schemas
+GRANT USAGE ON SCHEMA task_mgmt TO r_reader;
+GRANT USAGE ON SCHEMA task_mgmt TO r_writer;
+
+# Show default privs
+\ddp
+
+# Add missing defaults
+ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO r_reader;
+ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO r_writer;
+
+ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO r_reader;
+ALTER DEFAULT PRIVILEGES GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO r_writer;
+
+# Show table privs
+SET search_path TO task_mgmt;
+\dp
+
+# Fix perms for tables which should have been defaulted:
+grant select on all tables in schema task_mgmt to r_reader;
+grant select, insert, update, delete on all tables in schema task_mgmt to r_writer;
 ```

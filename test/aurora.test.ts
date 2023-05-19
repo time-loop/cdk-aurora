@@ -11,10 +11,10 @@ import {
   SubnetType,
   Vpc,
 } from 'aws-cdk-lib/aws-ec2';
-import { IKey, Key } from 'aws-cdk-lib/aws-kms';
-import { AuroraPostgresEngineVersion } from 'aws-cdk-lib/aws-rds';
+import { CfnKey, IKey, Key } from 'aws-cdk-lib/aws-kms';
+import { RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { AuroraPostgresEngineVersion, PerformanceInsightRetention } from 'aws-cdk-lib/aws-rds';
 import { Namer } from 'multi-convention-namer';
-// import { inspect } from 'util';
 
 import { Aurora, AuroraProps } from '../src';
 
@@ -89,6 +89,13 @@ describe('Aurora', () => {
       });
       template.hasResourceProperties('Custom::AuroraDatabase', { databaseName });
     });
+    it('performanceInsights', () => {
+      template.hasResourceProperties('AWS::RDS::DBInstance', {
+        PerformanceInsightsKMSKeyId: { 'Fn::GetAtt': [stack.getLogicalId(kmsKey.node.defaultChild as CfnKey), 'Arn'] },
+        EnablePerformanceInsights: true,
+      });
+    });
+
     it('proxyName', () => {
       template.hasResourceProperties('AWS::RDS::DBProxy', { DBProxyName: 'Test' });
     });
@@ -176,6 +183,33 @@ describe('Aurora', () => {
       const annotation = Annotations.fromStack(stack);
       annotation.hasWarning('*', Match.stringLikeRegexp('is not ARM64'));
     });
+    it('lambdaLogRetention', () => {
+      const lambdaLogRetention = RetentionDays.ONE_WEEK;
+      createAurora({ ...defaultAuroraProps, lambdaLogRetention });
+
+      // Find our provisioning lambdas
+      const lambdas = template.findResources('AWS::Lambda::Function', {
+        Environment: { MANAGER_SECRET_ARN: { Ref: Match.anyValue() } }, // this identifies our provisioning lambdas
+      });
+
+      // Every provisioning lambda should have a log retention associated with it, with a matching log group name
+      Object.keys(lambdas).forEach((k) => {
+        template.hasResourceProperties('Custom::LogRetention', {
+          RetentionInDays: lambdaLogRetention,
+          LogGroupName: {
+            'Fn::Join': Match.arrayEquals(['', Match.arrayWith(['/aws/lambda/', { Ref: k }])]),
+          },
+        });
+      });
+    });
+    describe('performanceInsightRetention', () => {
+      it('LONG_TERM', () => {
+        createAurora({ ...defaultAuroraProps, performanceInsightRetention: PerformanceInsightRetention.LONG_TERM });
+        template.hasResourceProperties('AWS::RDS::DBInstance', {
+          PerformanceInsightsRetentionPeriod: PerformanceInsightRetention.LONG_TERM,
+        });
+      });
+    });
     it('proxySecurityGroups', () => {
       const description = 'Test security group';
       const sg = new SecurityGroup(stack, 'MySecurityGroup', {
@@ -235,10 +269,21 @@ describe('Aurora', () => {
         template.hasResourceProperties('AWS::SecretsManager::Secret', { Name: 'YabbaDabbaDoTestManager' });
       });
     });
+    it('skipManagerRotation', () => {
+      createAurora({ ...defaultAuroraProps, skipManagerRotation: true });
+      ['AWS::SecretsManager::Secret'].forEach((r) => template.resourceCountIs(r, 3)); // Still have 3 users
+      ['AWS::SecretsManager::RotationSchedule'].forEach((r) => template.resourceCountIs(r, 2)); // Only read/write users are rotated
+    });
     it('skipAddRotationMultiUser', () => {
       createAurora({ ...defaultAuroraProps, skipAddRotationMultiUser: true });
       ['AWS::SecretsManager::Secret'].forEach((r) => template.resourceCountIs(r, 3)); // Still have 3 users
       ['AWS::SecretsManager::RotationSchedule'].forEach((r) => template.resourceCountIs(r, 1)); // Only manager is rotated
+    });
+    it('passwordRotationIntervalInDays', () => {
+      createAurora({ ...defaultAuroraProps, commonRotationUserOptions: { automaticallyAfter: Duration.days(10) } });
+      template.hasResourceProperties('AWS::SecretsManager::RotationSchedule', {
+        RotationRules: { AutomaticallyAfterDays: 10 },
+      });
     });
     it('skipProvisionDatabase', () => {
       createAurora({ ...defaultAuroraProps, skipProvisionDatabase: true });
