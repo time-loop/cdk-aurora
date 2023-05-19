@@ -12,9 +12,9 @@ Three users: manager, writer, reader all in SecretsManager w/ rotations.
 
 ```ts
 const a = new Aurora(this, 'Aurora', {
-  kmsKey: aws_kms.Key.fromKeyArn(this, 'Key', 'some arn'),
-  instanceType: aws_ec2.InstanceType.of(aws_ec2.InstanceClass.R6G, aws_ec2.InstanceSize.XLARGE24)
- });
+   kmsKey: aws_kms.Key.fromKeyArn(this, 'Key', 'some arn'),
+   instanceType: aws_ec2.InstanceType.of(aws_ec2.InstanceClass.R6G, aws_ec2.InstanceSize.XLARGE24)
+  });
 ```
 
 We have a CustomResource which fills the gap of creating the users
