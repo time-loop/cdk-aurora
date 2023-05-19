@@ -12,9 +12,9 @@ Three users: manager, writer, reader all in SecretsManager w/ rotations.
 
 ```ts
 const a = new Aurora(this, 'Aurora', {
-  kmsKey: aws_kms.Key.fromKeyArn(this, 'Key', 'some arn'),
-  instanceType: aws_ec2.InstanceType.of(aws_ec2.InstanceClass.R6G, aws_ec2.InstanceSize.XLARGE24)
- });
+   kmsKey: aws_kms.Key.fromKeyArn(this, 'Key', 'some arn'),
+   instanceType: aws_ec2.InstanceType.of(aws_ec2.InstanceClass.R6G, aws_ec2.InstanceSize.XLARGE24)
+  });
 ```
 
 We have a CustomResource which fills the gap of creating the users
@@ -239,20 +239,16 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.activityStream">activityStream</a></code> | <code>boolean</code> | Turn on the Activity Stream feature of the Aurora cluster. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.cloudwatchLogsExports">cloudwatchLogsExports</a></code> | <code>string[]</code> | Which logs to export to CloudWatch. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.cloudwatchLogsRetention">cloudwatchLogsRetention</a></code> | <code>aws-cdk-lib.aws_logs.RetentionDays</code> | How long to retain logs published to CloudWatch logs. |
-| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.commonRotationUserOptions">commonRotationUserOptions</a></code> | <code>aws-cdk-lib.aws_rds.CommonRotationUserOptions</code> | Common password rotation options. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instances">instances</a></code> | <code>number</code> | How many instances? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instanceType">instanceType</a></code> | <code>aws-cdk-lib.aws_ec2.InstanceType</code> | https://aws.amazon.com/blogs/aws/new-amazon-rds-on-graviton2-processors/ says we can use Graviton2 processors. Yay! |
-| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.lambdaLogRetention">lambdaLogRetention</a></code> | <code>aws-cdk-lib.aws_logs.RetentionDays</code> | How long to retain logs published by provisioning lambdas. |
-| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.performanceInsightRetention">performanceInsightRetention</a></code> | <code>aws-cdk-lib.aws_rds.PerformanceInsightRetention</code> | How long to retain performance insights data in days. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.postgresEngineVersion">postgresEngineVersion</a></code> | <code>aws-cdk-lib.aws_rds.AuroraPostgresEngineVersion</code> | Postgres version Be aware of version limitations See https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraFeaturesRegionsDBEngines.grids.html#Concepts.Aurora_Fea_Regions_DB-eng.Feature.RDS_Proxy. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.proxySecurityGroups">proxySecurityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | Security groups to use for the RDS Proxy. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.removalPolicy">removalPolicy</a></code> | <code>aws-cdk-lib.RemovalPolicy</code> | *No description.* |
-| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.retention">retention</a></code> | <code>aws-cdk-lib.Duration</code> | RDS backup retention. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.retention">retention</a></code> | <code>aws-cdk-lib.Duration</code> | *No description.* |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.schemas">schemas</a></code> | <code>string[]</code> | Schemas to create and grant defaults for users. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.secretPrefix">secretPrefix</a></code> | <code>string \| multi-convention-namer.Namer</code> | Prefix for secrets. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.securityGroups">securityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | Security groups to use for the Aurora cluster. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipAddRotationMultiUser">skipAddRotationMultiUser</a></code> | <code>boolean</code> | When bootstrapping, hold off on creating the `addRotationMultiUser`. |
-| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipManagerRotation">skipManagerRotation</a></code> | <code>boolean</code> | Skipping rotation for the manager user's password. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProvisionDatabase">skipProvisionDatabase</a></code> | <code>boolean</code> | Skip provisioning the database? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProxy">skipProxy</a></code> | <code>boolean</code> | By default, we provide a proxy for non-manager users. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipUserProvisioning">skipUserProvisioning</a></code> | <code>boolean</code> | When bootstrapping, hold off on provisioning users in the database. |
@@ -340,22 +336,6 @@ How long to retain logs published to CloudWatch logs.
 
 ---
 
-##### `commonRotationUserOptions`<sup>Optional</sup> <a name="commonRotationUserOptions" id="@time-loop/cdk-aurora.AuroraProps.property.commonRotationUserOptions"></a>
-
-```typescript
-public readonly commonRotationUserOptions: CommonRotationUserOptions;
-```
-
-- *Type:* aws-cdk-lib.aws_rds.CommonRotationUserOptions
-- *Default:* none, AWS defaults to 30 day rotation
-
-Common password rotation options.
-
-See
-https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds.CommonRotationUserOptions.html
-
----
-
 ##### `instances`<sup>Optional</sup> <a name="instances" id="@time-loop/cdk-aurora.AuroraProps.property.instances"></a>
 
 ```typescript
@@ -381,37 +361,6 @@ public readonly instanceType: InstanceType;
 - *Default:* aws_ec2.InstanceType.of(aws_ec2.InstanceClass.T4G,aws_ec2.InstanceSize.MEDIUM)
 
 https://aws.amazon.com/blogs/aws/new-amazon-rds-on-graviton2-processors/ says we can use Graviton2 processors. Yay!
-
----
-
-##### `lambdaLogRetention`<sup>Optional</sup> <a name="lambdaLogRetention" id="@time-loop/cdk-aurora.AuroraProps.property.lambdaLogRetention"></a>
-
-```typescript
-public readonly lambdaLogRetention: RetentionDays;
-```
-
-- *Type:* aws-cdk-lib.aws_logs.RetentionDays
-- *Default:* aws_logs.RetentionDays.THREE_MONTHS
-
-How long to retain logs published by provisioning lambdas.
-
-These are extremely low volume, and super handy to have around.
-
----
-
-##### `performanceInsightRetention`<sup>Optional</sup> <a name="performanceInsightRetention" id="@time-loop/cdk-aurora.AuroraProps.property.performanceInsightRetention"></a>
-
-```typescript
-public readonly performanceInsightRetention: PerformanceInsightRetention;
-```
-
-- *Type:* aws-cdk-lib.aws_rds.PerformanceInsightRetention
-- *Default:* passthrough (was 7 days as of cdk 2.78.0)
-
-How long to retain performance insights data in days.
-
-Free tier is 7 days.
-See: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbinstance.html#cfn-rds-dbinstance-performanceinsightsretentionperiod
 
 ---
 
@@ -460,8 +409,6 @@ public readonly retention: Duration;
 
 - *Type:* aws-cdk-lib.Duration
 - *Default:* Duration.days(1) This should pass through, but nope. So, we're duplicating the default.
-
-RDS backup retention.
 
 ---
 
@@ -519,19 +466,6 @@ When bootstrapping, hold off on creating the `addRotationMultiUser`.
 
 NOTE: the multiUser strategy relies on a `_clone` user, which is potentially surprising.
 See https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotating-secrets_strategies.html#rotating-secrets-two-users
-
----
-
-##### `skipManagerRotation`<sup>Optional</sup> <a name="skipManagerRotation" id="@time-loop/cdk-aurora.AuroraProps.property.skipManagerRotation"></a>
-
-```typescript
-public readonly skipManagerRotation: boolean;
-```
-
-- *Type:* boolean
-- *Default:* false
-
-Skipping rotation for the manager user's password.
 
 ---
 
