@@ -1811,13 +1811,13 @@
   dependencies:
     defer-to-connect "^2.0.1"
 
-"@time-loop/clickup-projen@^0.0.135":
-  version "0.0.135"
-  resolved "https://npm.pkg.github.com/download/@time-loop/clickup-projen/0.0.135/5d6716058927367d21b007ee5069c1774a5fc231#5d6716058927367d21b007ee5069c1774a5fc231"
-  integrity sha512-bbcy9YAYB/yoamrohgv8a73Na9++HhfHqLPfRh7eOnVw+wNP1o1a1ZgHm06a1UNpWDaGQFlWKta7i21ARqXeyA==
+"@time-loop/clickup-projen@^0.0.139":
+  version "0.0.139"
+  resolved "https://npm.pkg.github.com/download/@time-loop/clickup-projen/0.0.139/f0cd2a483641bff7cc39f6b93cc3fe934482b394#f0cd2a483641bff7cc39f6b93cc3fe934482b394"
+  integrity sha512-jCVrd0KaCOKBY38ACGMyvaHY9bnEpWktvImPlHnnCaE5Nt3hG9DUb/DJ/Wav8PfvOUgECZl/h28qlw2MK05/JQ==
   dependencies:
     cson-parser "^4.0.9"
-    projen "^0.71.64"
+    projen "^0.71.67"
     ts-deepmerge "^6.0.3"
 
 "@tootallnate/once@1":
@@ -6863,6 +6863,25 @@ projen@^0.71.64:
   version "0.71.64"
   resolved "https://registry.yarnpkg.com/projen/-/projen-0.71.64.tgz#bffcb126f584166bf8b9c259d6e71cdbe30200ce"
   integrity sha512-JbZ4cjeLmGQQdM4dTdoD35WjuEbw7Hlys5E7mc04isHu1uy3g9KLkSWXVaZVljgiXTRdfVbpkH64tn8MIBtXjw==
+  dependencies:
+    "@iarna/toml" "^2.2.5"
+    case "^1.6.3"
+    chalk "^4.1.2"
+    comment-json "4.2.2"
+    conventional-changelog-config-spec "^2.1.0"
+    fast-json-patch "^3.1.1"
+    glob "^8"
+    ini "^2.0.0"
+    semver "^7.5.1"
+    shx "^0.3.4"
+    xmlbuilder2 "^3.1.1"
+    yaml "^2.2.2"
+    yargs "^17.7.2"
+
+projen@^0.71.67:
+  version "0.71.68"
+  resolved "https://registry.yarnpkg.com/projen/-/projen-0.71.68.tgz#69a407d6e6a0fffd1ee09324e8ac4d2738e7d39a"
+  integrity sha512-uD6ezLoT1OmfIuqaLDn7ZIeusxnNxso0uOE56iWJZK5kmU7TT1d4KP5Lx4mVnMUuuqDxcsFvzDEH72f+0rdhRg==
   dependencies:
     "@iarna/toml" "^2.2.5"
     case "^1.6.3"
