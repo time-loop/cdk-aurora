@@ -47,8 +47,6 @@
     "standard-version",
     "ts-jest",
     "ts-node",
-    "@types/babel__traverse",
-    "@types/prettier",
     "aws-cdk-lib",
     "constructs",
     "multi-convention-namer",

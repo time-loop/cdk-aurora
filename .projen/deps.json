@@ -111,7 +111,7 @@
     },
     {
       "name": "jsii",
-      "version": "1.x",
+      "version": "5.0.*",
       "type": "build"
     },
     {
@@ -178,16 +178,6 @@
     {
       "name": "pg-format",
       "type": "bundled"
-    },
-    {
-      "name": "@types/babel__traverse",
-      "version": "7.18.2",
-      "type": "override"
-    },
-    {
-      "name": "@types/prettier",
-      "version": "2.6.0",
-      "type": "override"
     },
     {
       "name": "aws-cdk-lib",

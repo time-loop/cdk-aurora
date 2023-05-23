@@ -7,6 +7,7 @@ const project = new clickupCdk.ClickUpCdkConstructLibrary({
   name: '@time-loop/cdk-aurora',
 
   cdkVersion: '2.78.0', // https://github.com/aws/aws-cdk/pull/25347 add missing PerformanceInsightRetention options
+  jsiiVersion: '5.0.*',
   defaultReleaseBranch: 'main',
   licensed: true,
 
