@@ -34,7 +34,7 @@
     "organization": true
   },
   "devDependencies": {
-    "@time-loop/clickup-projen": "^0.0.135",
+    "@time-loop/clickup-projen": "^0.0.139",
     "@types/aws-lambda": "^8.10.115",
     "@types/jest": "^27",
     "@types/node": "^14",

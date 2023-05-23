@@ -25,10 +25,11 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
       - name: GitHub Packages authorization
-        if: ${{ github.job != 'release_npm' }}
+        env:
+          NPM_TOKEN: ${{ secrets.ALL_PACKAGE_READ_TOKEN }}
         run: |-
           cat > .npmrc <<EOF
-          //npm.pkg.github.com/:_authToken=${{ secrets.ALL_PACKAGE_READ_TOKEN }}
+          //npm.pkg.github.com/:_authToken=${NPM_TOKEN}
           @time-loop:registry=https://npm.pkg.github.com/
           EOF
       - name: Make cdk-ecr-deployment sane
@@ -109,10 +110,11 @@ jobs:
         run: cd dist && setfacl --restore=permissions-backup.acl
         continue-on-error: true
       - name: GitHub Packages authorization
-        if: ${{ github.job != 'release_npm' }}
+        env:
+          NPM_TOKEN: ${{ secrets.ALL_PACKAGE_READ_TOKEN }}
         run: |-
           cat > .npmrc <<EOF
-          //npm.pkg.github.com/:_authToken=${{ secrets.ALL_PACKAGE_READ_TOKEN }}
+          //npm.pkg.github.com/:_authToken=${NPM_TOKEN}
           @time-loop:registry=https://npm.pkg.github.com/
           EOF
       - name: Make cdk-ecr-deployment sane
@@ -123,6 +125,8 @@ jobs:
         run: cd .repo && yarn install --check-files --frozen-lockfile
       - name: Create js artifact
         run: cd .repo && npx projen package:js
+      - name: Remove .npmrc file for release
+        run: rm .npmrc
       - name: Collect js Artifact
         run: mv .repo/dist dist
       - name: Release
