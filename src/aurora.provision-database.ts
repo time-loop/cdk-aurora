@@ -264,6 +264,8 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
 
   try {
     console.log(`Connecting to database "${props.databaseName}"`);
+    // We assume that having already managed to connect,
+    // we don't need to repeat the retry logic here.
     client = await m.connect({ ...clientConfig, database: props.databaseName });
   } catch (err) {
     console.log(`connect failed: ${err}`);
