@@ -233,7 +233,6 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
           `password authentication failed, refetching password, attempt ${passwordAuthenticationFailedRetries}/${maxRetries} sleeping ${retryDelayMs}`,
         );
         await wait(retryDelayMs);
-        continue; // Try again
       } else {
         return resultFactory({
           ReasonPrefix: `connect failed: ${err}`,
