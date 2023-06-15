@@ -137,6 +137,25 @@ describe('handler', () => {
       });
     });
 
+    it('re-fetches secret for password authentication errors', async () => {
+      const errorMessage = 'password authentication failed for user "foobar"';
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchSecretStub.resolves(standardSecretResult);
+      connectStub.rejects(new Error(errorMessage));
+      const r = await handler(createEvent, context, callback);
+      expect(fetchSecretStub.callCount).toEqual(maxRetries + 1);
+      expect(connectStub.callCount).toEqual(maxRetries + 1);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeDbName',
+        Reason: 'connect failed: Error: password authentication failed for user \"foobar\" see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+
     it('handles error from createDatabase', async () => {
       process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
       fetchSecretStub.resolves(standardSecretResult);

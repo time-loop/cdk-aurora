@@ -201,10 +201,8 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   let clientConfig: ClientConfig;
   let client: Client;
 
-  let passwordAuthenticationFailedRetries = maxRetries;
+  let passwordAuthenticationFailedRetries = 0;
   while (true) {
-    passwordAuthenticationFailedRetries -= 1;
-
     try {
       console.log('Fetching credentials from Secrets Manager');
       clientConfig = await m.fetchSecret(managerSecretArn);
@@ -225,11 +223,12 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
       // If the connect fails because of a 'password authentication failed' error,
       // We should re-fetch the secret and try connecting again.
       if (
-        passwordAuthenticationFailedRetries >= 0 &&
+        passwordAuthenticationFailedRetries < maxRetries &&
         err instanceof Error &&
         err.message.includes('password authentication failed')
       ) {
         console.log('password authentication failed, refetch password');
+        passwordAuthenticationFailedRetries += 1;
         await wait(retryDelayMs);
         continue; // Try again
       } else {
