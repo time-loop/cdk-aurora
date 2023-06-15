@@ -354,10 +354,7 @@ export class Methods {
         if (res.rowCount !== 1) throw new Error('expected 1 row, got ' + res.rowCount);
         return client;
       } catch (err) {
-        if (
-          err instanceof Error &&
-          err.message.includes('password authentication failed')
-        ) {
+        if (err instanceof Error && err.message.includes('password authentication failed')) {
           console.log('password authentication failed error, not retrying');
           throw err;
         }

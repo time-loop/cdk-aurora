@@ -313,7 +313,7 @@ describe('handler', () => {
       expect(r).toEqual({
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeDbName',
-        Reason: 'connect failed: Error: password authentication failed for user \"foobar\" see also fakeLogStreamName',
+        Reason: 'connect failed: Error: password authentication failed for user "foobar" see also fakeLogStreamName',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
