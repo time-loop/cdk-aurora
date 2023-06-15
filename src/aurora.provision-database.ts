@@ -218,6 +218,7 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
       // While the grants below care which database we are in,
       // we haven't created the database yet, so we need to connect to postgres.
       client = await m.connect({ ...clientConfig, database: 'postgres' });
+      break;
     } catch (err) {
       console.log(`connect failed: ${err}`);
       // If the connect fails because of a 'password authentication failed' error,
@@ -240,7 +241,6 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
         });
       }
     }
-    break;
   }
 
   try {
