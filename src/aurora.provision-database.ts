@@ -228,7 +228,9 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
         err.message.includes('password authentication failed')
       ) {
         passwordAuthenticationFailedRetries += 1;
-        console.log(`password authentication failed, refetching password, attempt ${passwordAuthenticationFailedRetries}/${maxRetries} sleeping ${retryDelayMs}`);
+        console.log(
+          `password authentication failed, refetching password, attempt ${passwordAuthenticationFailedRetries}/${maxRetries} sleeping ${retryDelayMs}`,
+        );
         await wait(retryDelayMs);
         continue; // Try again
       } else {
