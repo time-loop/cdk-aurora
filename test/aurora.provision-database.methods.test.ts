@@ -75,7 +75,6 @@ describe('connect', () => {
     expect(queryStub.callCount).toEqual(1);
   });
 
-  // TODO: figure out how to stub these correctly?
   it('retries when failing to connect', async () => {
     const maxRetries = 5;
     const retryDelayMs = 1;
@@ -117,6 +116,14 @@ describe('connect', () => {
 
     expect(connectStub.callCount).toEqual(2);
     expect(queryStub.callCount).toEqual(2);
+  });
+
+  it('fails immediately for password authentication failed', async () => {
+    const errorMessage = 'password authentication failed for user "foobar"';
+    connectStub.rejects(new Error(errorMessage));
+    await expect(m.connect(standardClientConfig)).rejects.toThrowError(errorMessage);
+    expect(connectStub.callCount).toEqual(1); // Should not retry
+    expect(queryStub.callCount).toEqual(0);
   });
 });
 

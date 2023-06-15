@@ -21,6 +21,10 @@ const createSchemaStub = sinon.stub(Methods.prototype, 'createSchema');
 const configureRoleStub = sinon.stub(Methods.prototype, 'configureRole');
 const connectStub = sinon.stub(Methods.prototype, 'connect');
 
+jest.mock('../src/helpers', () => ({
+  wait: jest.fn(() => Promise.resolve()),
+}));
+
 const standardSecretResult = {
   clientConfig: {
     user: 'fakeManagerUser',
@@ -49,9 +53,14 @@ afterAll(() => {
 });
 
 describe('handler', () => {
+  const maxRetries = 5;
+  const retryDelayMs = 1;
+
   const resourcePropertiesBase = {
     ServiceToken: 'fakeServiceToken',
     databaseName: 'fakeDbName',
+    maxRetries,
+    retryDelayMs,
   };
 
   const eventBase: CloudFormationCustomResourceEventCommon = {
@@ -287,6 +296,24 @@ describe('handler', () => {
         LogicalResourceId: 'fakeLogicalResourceId',
         PhysicalResourceId: 'fakeDbName',
         Reason: 'connect failed: Error: whoopsie see also fakeLogStreamName',
+        RequestId: 'fakeRequestId',
+        StackId: 'fakeStackId',
+        Status: 'FAILED',
+      });
+    });
+
+    it('re-fetches secret for password authentication errors', async () => {
+      const errorMessage = 'password authentication failed for user "foobar"';
+      process.env.MANAGER_SECRET_ARN = 'fakeManagerSecretArn';
+      fetchSecretStub.resolves(standardSecretResult);
+      connectStub.rejects(new Error(errorMessage));
+      const r = await handler(updateEvent, context, callback);
+      expect(fetchSecretStub.callCount).toEqual(maxRetries + 1);
+      expect(connectStub.callCount).toEqual(maxRetries + 1);
+      expect(r).toEqual({
+        LogicalResourceId: 'fakeLogicalResourceId',
+        PhysicalResourceId: 'fakeDbName',
+        Reason: 'connect failed: Error: password authentication failed for user \"foobar\" see also fakeLogStreamName',
         RequestId: 'fakeRequestId',
         StackId: 'fakeStackId',
         Status: 'FAILED',
