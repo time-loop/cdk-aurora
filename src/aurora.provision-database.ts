@@ -50,6 +50,8 @@ interface CreateUpdateProps {
 
   databaseName: string;
   schemas?: string[];
+  retryDelayMs?: number;
+  maxRetries?: number;
 }
 
 enum CfnStatus {
@@ -105,6 +107,8 @@ async function onCreate(
     ...event,
     ...context,
     databaseName: event.ResourceProperties.databaseName,
+    maxRetries: event.ResourceProperties.maxRetries,
+    retryDelayMs: event.ResourceProperties.retryDelayMs,
     schemas: event.ResourceProperties.schemas,
   });
 }
@@ -127,6 +131,8 @@ const onUpdate = async (
     ...event,
     ...context,
     databaseName: event.ResourceProperties.databaseName,
+    maxRetries: event.ResourceProperties.maxRetries,
+    retryDelayMs: event.ResourceProperties.retryDelayMs,
     schemas: event.ResourceProperties.schemas,
   });
 };
@@ -165,6 +171,8 @@ const onDelete = async (
  */
 export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.CloudFormationCustomResourceResponse> {
   const schemas = props.schemas ?? [];
+  const retryDelayMs = props.retryDelayMs ?? RETRY_DELAY_MS;
+  const maxRetries = props.maxRetries ?? MAX_RETIRES;
 
   const resultFactory = (p: ResultProps): awsLambda.CloudFormationCustomResourceResponse => {
     return {
@@ -191,28 +199,47 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
   const m = new Methods();
 
   let clientConfig: ClientConfig;
-  try {
-    console.log('Fetching credentials from Secrets Manager');
-    clientConfig = await m.fetchSecret(managerSecretArn);
-  } catch (err) {
-    return resultFactory({
-      ReasonPrefix: `Secrets issue: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
-  }
-
   let client: Client;
-  try {
-    console.log(`Connecting to database "postgres"`);
-    // While the grants below care which database we are in,
-    // we haven't created the database yet, so we need to connect to postgres.
-    client = await m.connect({ ...clientConfig, database: 'postgres' });
-  } catch (err) {
-    console.log(`connect failed: ${err}`);
-    return resultFactory({
-      ReasonPrefix: `connect failed: ${err}`,
-      Status: CfnStatus.FAILED,
-    });
+
+  let passwordAuthenticationFailedRetries = 0;
+  while (true) {
+    try {
+      console.log('Fetching credentials from Secrets Manager');
+      clientConfig = await m.fetchSecret(managerSecretArn);
+    } catch (err) {
+      return resultFactory({
+        ReasonPrefix: `Secrets issue: ${err}`,
+        Status: CfnStatus.FAILED,
+      });
+    }
+
+    try {
+      console.log('Connecting to database "postgres"');
+      // While the grants below care which database we are in,
+      // we haven't created the database yet, so we need to connect to postgres.
+      client = await m.connect({ ...clientConfig, database: 'postgres' });
+      break;
+    } catch (err) {
+      console.log(`connect failed: ${err}`);
+      // If the connect fails because of a 'password authentication failed' error,
+      // We should re-fetch the secret and try connecting again.
+      if (
+        passwordAuthenticationFailedRetries < maxRetries &&
+        err instanceof Error &&
+        err.message.includes('password authentication failed')
+      ) {
+        passwordAuthenticationFailedRetries += 1;
+        console.log(
+          `password authentication failed, refetching password, attempt ${passwordAuthenticationFailedRetries}/${maxRetries} sleeping ${retryDelayMs}`,
+        );
+        await wait(retryDelayMs);
+      } else {
+        return resultFactory({
+          ReasonPrefix: `connect failed: ${err}`,
+          Status: CfnStatus.FAILED,
+        });
+      }
+    }
   }
 
   try {
@@ -236,6 +263,8 @@ export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.
 
   try {
     console.log(`Connecting to database "${props.databaseName}"`);
+    // We assume that having already managed to connect,
+    // we don't need to repeat the retry logic here.
     client = await m.connect({ ...clientConfig, database: props.databaseName });
   } catch (err) {
     console.log(`connect failed: ${err}`);
@@ -327,6 +356,10 @@ export class Methods {
         if (res.rowCount !== 1) throw new Error('expected 1 row, got ' + res.rowCount);
         return client;
       } catch (err) {
+        if (err instanceof Error && err.message.includes('password authentication failed')) {
+          console.log('password authentication failed error, not retrying');
+          throw err;
+        }
         if (attempts < maxRetries) {
           attempts += 1;
           console.log(`Failed to connect (attempt ${attempts}/${maxRetries}): ${err}, sleeping ${retryDelayMs}ms`);
