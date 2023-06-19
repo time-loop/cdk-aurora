@@ -184,6 +184,23 @@ export interface AuroraProps {
    * @default {subnetType:aws_ec2.SubnetType.PRIVATE_WITH_EGRESS} - all private subnets
    */
   readonly vpcSubnets?: aws_ec2.SubnetSelection;
+
+  /**
+   * Additional parameters to pass to the database engine
+   *
+   * @default - No parameter group.
+   */
+  readonly parameterGroup?: aws_rds.IParameterGroup;
+
+  /**
+   * The parameters in the DBClusterParameterGroup to create automatically
+   *
+   * You can only specify parameterGroup or parameters but not both.
+   * You need to use a versioned engine to auto-generate a DBClusterParameterGroup.
+   *
+   * @default - defaultParameters
+   */
+  readonly parameters?: { [key: string]: string };
 }
 
 /**
@@ -267,6 +284,21 @@ export class Aurora extends Construct {
       ];
     }
 
+    /*
+      If both parameterGroup and parameters are not specified, the defaultParameters is used.
+      The behaviour is for backward compatibility so existing clusters don't show diffs when using upgraded libary.
+      Maybe better to move it to a upstream library.
+     */
+    const defaultParameters = {
+      // While these are mentioned in the docs, applying them doesn't work.
+      'rds.logical_replication': '1', // found in the cluster parameters.
+      // wal_level: 'logical', // not found in cluster parameters, but implicitly set by rds.logical_replication
+      max_replication_slots: '10', // Arbitrary, must be > 1
+      max_wal_senders: '10', // Arbitrary, must be > 1
+      wal_sender_timeout: '0', // Never time out. Risky, but recommended.
+    };
+    const parameters = props.parameterGroup || props.parameters ? props.parameters : defaultParameters;
+
     this.cluster = new aws_rds.DatabaseCluster(this, 'Database', {
       backup: {
         retention: props.retention ?? Duration.days(1),
@@ -293,14 +325,8 @@ export class Aurora extends Construct {
         vpcSubnets,
       },
       instances: props.instances,
-      parameters: {
-        // While these are mentioned in the docs, applying them doesn't work.
-        'rds.logical_replication': '1', // found in the cluster parameters.
-        // wal_level: 'logical', // not found in cluster parameters, but implicitly set by rds.logical_replication
-        max_replication_slots: '10', // Arbitrary, must be > 1
-        max_wal_senders: '10', // Arbitrary, must be > 1
-        wal_sender_timeout: '0', // Never time out. Risky, but recommended.
-      },
+      parameterGroup: props.parameterGroup,
+      parameters: parameters,
       removalPolicy: props.removalPolicy,
       storageEncryptionKey: encryptionKey,
     });

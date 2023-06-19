@@ -473,6 +473,8 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instances">instances</a></code> | <code>number</code> | How many instances? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instanceType">instanceType</a></code> | <code>aws-cdk-lib.aws_ec2.InstanceType</code> | https://aws.amazon.com/blogs/aws/new-amazon-rds-on-graviton2-processors/ says we can use Graviton2 processors. Yay! |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.lambdaLogRetention">lambdaLogRetention</a></code> | <code>aws-cdk-lib.aws_logs.RetentionDays</code> | How long to retain logs published by provisioning lambdas. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.parameterGroup">parameterGroup</a></code> | <code>aws-cdk-lib.aws_rds.IParameterGroup</code> | Additional parameters to pass to the database engine. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.parameters">parameters</a></code> | <code>{[ key: string ]: string}</code> | The parameters in the DBClusterParameterGroup to create automatically. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.performanceInsightRetention">performanceInsightRetention</a></code> | <code>aws-cdk-lib.aws_rds.PerformanceInsightRetention</code> | How long to retain performance insights data in days. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.postgresEngineVersion">postgresEngineVersion</a></code> | <code>aws-cdk-lib.aws_rds.AuroraPostgresEngineVersion</code> | Postgres version Be aware of version limitations See https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraFeaturesRegionsDBEngines.grids.html#Concepts.Aurora_Fea_Regions_DB-eng.Feature.RDS_Proxy. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.proxySecurityGroups">proxySecurityGroups</a></code> | <code>aws-cdk-lib.aws_ec2.ISecurityGroup[]</code> | Security groups to use for the RDS Proxy. |
@@ -626,6 +628,35 @@ public readonly lambdaLogRetention: RetentionDays;
 How long to retain logs published by provisioning lambdas.
 
 These are extremely low volume, and super handy to have around.
+
+---
+
+##### `parameterGroup`<sup>Optional</sup> <a name="parameterGroup" id="@time-loop/cdk-aurora.AuroraProps.property.parameterGroup"></a>
+
+```typescript
+public readonly parameterGroup: IParameterGroup;
+```
+
+- *Type:* aws-cdk-lib.aws_rds.IParameterGroup
+- *Default:* No parameter group.
+
+Additional parameters to pass to the database engine.
+
+---
+
+##### `parameters`<sup>Optional</sup> <a name="parameters" id="@time-loop/cdk-aurora.AuroraProps.property.parameters"></a>
+
+```typescript
+public readonly parameters: {[ key: string ]: string};
+```
+
+- *Type:* {[ key: string ]: string}
+- *Default:* defaultParameters
+
+The parameters in the DBClusterParameterGroup to create automatically.
+
+You can only specify parameterGroup or parameters but not both.
+You need to use a versioned engine to auto-generate a DBClusterParameterGroup.
 
 ---
 
