@@ -188,6 +188,8 @@ export interface AuroraProps {
   /**
    * Additional parameters to pass to the database engine
    *
+   * You can only specify parameterGroup or parameters but not both.
+   *
    * @default - No parameter group.
    */
   readonly parameterGroup?: aws_rds.IParameterGroup;
@@ -199,6 +201,16 @@ export interface AuroraProps {
    * You need to use a versioned engine to auto-generate a DBClusterParameterGroup.
    *
    * @default - defaultParameters
+   *
+   * const defaultParameters = {
+   *   // While these are mentioned in the docs, applying them doesn't work.
+   *   'rds.logical_replication': '1', // found in the cluster parameters.
+   *   // wal_level: 'logical', // not found in cluster parameters, but implicitly set by rds.logical_replication
+   *   max_replication_slots: '10', // Arbitrary, must be > 1
+   *   max_wal_senders: '10', // Arbitrary, must be > 1
+   *   wal_sender_timeout: '0', // Never time out. Risky, but recommended.
+   * };
+   *
    */
   readonly parameters?: { [key: string]: string };
 }
