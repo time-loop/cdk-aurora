@@ -13,7 +13,12 @@ import {
 } from 'aws-cdk-lib/aws-ec2';
 import { CfnKey, IKey, Key } from 'aws-cdk-lib/aws-kms';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
-import { AuroraPostgresEngineVersion, PerformanceInsightRetention } from 'aws-cdk-lib/aws-rds';
+import {
+  AuroraPostgresEngineVersion,
+  DatabaseClusterEngine,
+  ParameterGroup,
+  PerformanceInsightRetention,
+} from 'aws-cdk-lib/aws-rds';
 import { Namer } from 'multi-convention-namer';
 
 import { Aurora, AuroraProps } from '../src';
@@ -314,6 +319,25 @@ describe('Aurora', () => {
           SubnetIds: Match.arrayWith([{ Ref: stack.getLogicalId(subnet) }]),
         }),
       );
+    });
+    it('parameterGroup', () => {
+      const version = AuroraPostgresEngineVersion.VER_12_8;
+      const parameterGroup = new ParameterGroup(stack, 'ParameterGroup', {
+        engine: DatabaseClusterEngine.auroraPostgres({
+          version,
+        }),
+        parameters: { test: 'rds' },
+      });
+      createAurora({ ...defaultAuroraProps, parameterGroup: parameterGroup });
+      template.hasResourceProperties('AWS::RDS::DBClusterParameterGroup', {
+        Parameters: { test: 'rds' },
+      });
+    });
+    it('parameters', () => {
+      createAurora({ ...defaultAuroraProps, parameters: { test: 'rds' } });
+      template.hasResourceProperties('AWS::RDS::DBClusterParameterGroup', {
+        Parameters: { test: 'rds' },
+      });
     });
   });
 });
