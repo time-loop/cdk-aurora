@@ -308,14 +308,14 @@ describe('postgres', () => {
 
   describe('grantRole', () => {
     it('grants for readers', async () => {
-      postgresStub.resolves();
+      postgresStub.resolves({ rowCount: 1, rows: 'fake'});
       await m.grantRole(client, 'fakeUsername', 'r_reader');
       expect(postgresStub.callCount).toEqual(1);
       expect(postgresStub.firstCall.args[0]).toEqual('GRANT r_reader TO "fakeUsername"');
     });
 
     it('grants for writers', async () => {
-      postgresStub.resolves();
+      postgresStub.resolves({ rowCount: 1, rows: 'fake'});
       await m.grantRole(client, 'fakeUsername', 'r_writer');
       expect(postgresStub.callCount).toEqual(1);
       expect(postgresStub.firstCall.args[0]).toEqual('GRANT r_writer TO "fakeUsername"');

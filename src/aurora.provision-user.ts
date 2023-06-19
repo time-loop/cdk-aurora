@@ -421,7 +421,8 @@ export class Methods {
     try {
       const sql = format('GRANT %I TO %I', role, username);
       console.log(`Running: ${sql}`);
-      await client.query(sql);
+      const sqlRes = await client.query(sql);
+      console.log(`Result: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
     } catch (err) {
       console.log(`Failed granting ${role} to ${username}: ${JSON.stringify(err)}`);
       throw err;
