@@ -642,6 +642,8 @@ public readonly parameterGroup: IParameterGroup;
 
 Additional parameters to pass to the database engine.
 
+You can only specify parameterGroup or parameters but not both.
+
 ---
 
 ##### `parameters`<sup>Optional</sup> <a name="parameters" id="@time-loop/cdk-aurora.AuroraProps.property.parameters"></a>
@@ -651,7 +653,7 @@ public readonly parameters: {[ key: string ]: string};
 ```
 
 - *Type:* {[ key: string ]: string}
-- *Default:* defaultParameters
+- *Default:* defaultParameters  const defaultParameters = { // While these are mentioned in the docs, applying them doesn't work. 'rds.logical_replication': '1', // found in the cluster parameters. // wal_level: 'logical', // not found in cluster parameters, but implicitly set by rds.logical_replication max_replication_slots: '10', // Arbitrary, must be > 1 max_wal_senders: '10', // Arbitrary, must be > 1 wal_sender_timeout: '0', // Never time out. Risky, but recommended. };
 
 The parameters in the DBClusterParameterGroup to create automatically.
 
