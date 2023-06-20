@@ -382,11 +382,14 @@ export class Methods {
       } else {
         const sql = format('CREATE USER %I PASSWORD NULL', username);
         console.log(`Running: ${sql}`);
-        await client.query(sql);
+        const sqlRes = await client.query(sql);
+        console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
       }
       const sql = format(`ALTER ROLE %I NOBYPASSRLS NOCREATEDB NOCREATEROLE INHERIT`, username);
       console.log(`Running: ${sql}`);
-      await client.query(sql);
+      const sqlRes = await client.query(sql);
+      console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
+
     } catch (err) {
       console.log(`Failed creating ${username}: ${JSON.stringify(err)}`);
       throw err;
@@ -403,7 +406,8 @@ export class Methods {
     try {
       const alterPassword = format('ALTER USER %I WITH ENCRYPTED PASSWORD %L', username, password);
       console.log(`Updating password for ${username} from secret`);
-      await client.query(alterPassword);
+      const sqlRes = await client.query(alterPassword);
+      console.log(`Result of ALTER USER ... WITH ENCRYPTED PASSWORD ...: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
     } catch (err) {
       console.log(`Failed updating password for ${username}: ${JSON.stringify(err)}`);
       throw err;

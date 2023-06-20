@@ -385,7 +385,8 @@ export class Methods {
       } else {
         const sql = format('CREATE ROLE %I', role);
         console.log(`Running: ${sql}`);
-        await client.query(sql);
+        const sqlRes = await client.query(sql);
+        console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
       }
       const sql = format(`ALTER ROLE %I NOBYPASSRLS NOCREATEDB NOCREATEROLE NOLOGIN INHERIT`, role);
       console.log(`Running: ${sql}`);
