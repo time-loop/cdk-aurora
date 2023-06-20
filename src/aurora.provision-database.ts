@@ -385,11 +385,13 @@ export class Methods {
       } else {
         const sql = format('CREATE ROLE %I', role);
         console.log(`Running: ${sql}`);
-        await client.query(sql);
+        const sqlRes = await client.query(sql);
+        console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
       }
       const sql = format(`ALTER ROLE %I NOBYPASSRLS NOCREATEDB NOCREATEROLE NOLOGIN INHERIT`, role);
       console.log(`Running: ${sql}`);
-      await client.query(sql);
+      const sqlRes = await client.query(sql);
+      console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
     } catch (err) {
       console.log(`Failed creating roles: ${JSON.stringify(err)}`);
       throw err;
@@ -411,7 +413,8 @@ export class Methods {
       }
       const sql = format('CREATE DATABASE %I', databaseName);
       console.log(`Running: ${sql}`);
-      await client.query(sql);
+      const sqlRes = await client.query(sql);
+      console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
     } catch (err) {
       console.log(`Error creating database ${databaseName}: ${err}`);
     }
@@ -421,7 +424,8 @@ export class Methods {
     try {
       const sql = format(`CREATE SCHEMA IF NOT EXISTS %I`, schemaName);
       console.log(`Running: ${sql}`);
-      await client.query(sql);
+      const sqlRes = await client.query(sql);
+      console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
     } catch (err) {
       console.log(`Error creating schema ${schemaName}: ${err}`);
     }
@@ -448,7 +452,8 @@ export class Methods {
         ), // Defaults on tables
       ].map(async (sql) => {
         console.log(`Running: ${sql}`);
-        return client.query(sql);
+        const sqlRes = await client.query(sql);
+        console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
       });
     } catch (err) {
       console.log(`Failed creating roles: ${JSON.stringify(err)}`);
