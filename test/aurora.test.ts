@@ -170,18 +170,20 @@ describe('Aurora', () => {
     });
 
     describe('multiuser rotation and proxy incompatibility', () => {
-      const incompatibilityWarning = Match.stringLikeRegexp('AWS RDS Proxy is fundamentally incompatible with the MultiUser rotation scheme.');
+      const incompatibilityWarning = Match.stringLikeRegexp(
+        'AWS RDS Proxy is fundamentally incompatible with the MultiUser rotation scheme.',
+      );
       it('warns when both are enabled', () => {
         createAurora(defaultAuroraProps);
         annotations.hasWarning('*', incompatibilityWarning);
       });
       it('does not warn when multiuser rotation disabled', () => {
-        createAurora({...defaultAuroraProps, skipAddRotationMultiUser: true });
+        createAurora({ ...defaultAuroraProps, skipAddRotationMultiUser: true });
         annotations.hasNoWarning('*', incompatibilityWarning);
       });
       it('does not warn when proxy disabled', () => {
-        createAurora({...defaultAuroraProps, skipProxy: true });
-        annotations.hasNoWarning('*', incompatibilityWarning)
+        createAurora({ ...defaultAuroraProps, skipProxy: true });
+        annotations.hasNoWarning('*', incompatibilityWarning);
       });
     });
 
