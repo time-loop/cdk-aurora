@@ -389,7 +389,6 @@ export class Methods {
       console.log(`Running: ${sql}`);
       const sqlRes = await client.query(sql);
       console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
-
     } catch (err) {
       console.log(`Failed creating ${username}: ${JSON.stringify(err)}`);
       throw err;
@@ -407,7 +406,11 @@ export class Methods {
       const alterPassword = format('ALTER USER %I WITH ENCRYPTED PASSWORD %L', username, password);
       console.log(`Updating password for ${username} from secret`);
       const sqlRes = await client.query(alterPassword);
-      console.log(`Result of ALTER USER ... WITH ENCRYPTED PASSWORD ...: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
+      console.log(
+        `Result of ALTER USER ... WITH ENCRYPTED PASSWORD ...: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(
+          sqlRes.rows,
+        )}`,
+      );
     } catch (err) {
       console.log(`Failed updating password for ${username}: ${JSON.stringify(err)}`);
       throw err;
