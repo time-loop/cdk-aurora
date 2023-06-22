@@ -257,7 +257,7 @@ export class Aurora extends Construct {
   constructor(scope: Construct, id: Namer, props: AuroraProps) {
     super(scope, id.pascal);
 
-    if (!props.skipAddRotationMultiUser && props.skipProxy) {
+    if (!props.skipAddRotationMultiUser && !props.skipProxy) {
       Annotations.of(this).addWarning(
         'AWS RDS Proxy is fundamentally incompatible with the MultiUser rotation scheme. Please see README.md for more information.',
       );
