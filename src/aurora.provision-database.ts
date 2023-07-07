@@ -441,7 +441,7 @@ export class Methods {
   public async configureRole(client: Client, databaseName: string, role: string, schemas: string[]): Promise<void> {
     try {
       const isWriter = role == 'r_writer';
-      [
+      const sqls = [
         format('GRANT CONNECT ON DATABASE %I TO %I', databaseName, role), // Usage on Database
         ...schemas.map((s) => format('GRANT USAGE ON SCHEMA %I TO %I', s, role)), // Usage on Schema(s)
         format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', role), // Defaults on sequences
@@ -450,11 +450,12 @@ export class Methods {
           isWriter ? ', INSERT, UPDATE, DELETE' : '',
           role,
         ), // Defaults on tables
-      ].map(async (sql) => {
+      ];
+      for (let sql in sqls) {
         console.log(`Running: ${sql}`);
         const sqlRes = await client.query(sql);
         console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
-      });
+      }
     } catch (err) {
       console.log(`Failed creating roles: ${JSON.stringify(err)}`);
       throw err;
