@@ -1,0 +1,12 @@
+{
+  "version": "31.0.0",
+  "testCases": {
+    "Test/DefaultTest": {
+      "stacks": [
+        "AuroraBaseline"
+      ],
+      "assertionStack": "Test/DefaultTest/DeployAssert",
+      "assertionStackName": "TestDefaultTestDeployAssert12909640"
+    }
+  }
+}
