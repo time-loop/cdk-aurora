@@ -194,6 +194,12 @@ describe('Aurora', () => {
       template.resourceCountIs('Custom::AuroraActivityStream', 1);
       expect(aurora.activityStreamArn).not.toBeFalsy();
     });
+    it('deletionProtection', () => {
+      createAurora({ ...defaultAuroraProps, deletionProtection: false });
+      template.hasResourceProperties('AWS::RDS::DBCluster', {
+        DeletionProtection: false,
+      });
+    });
     it('instances', () => {
       createAurora({ ...defaultAuroraProps, instances: 12 });
       template.resourceCountIs('AWS::RDS::DBInstance', 12);
