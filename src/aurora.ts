@@ -60,6 +60,13 @@ export interface AuroraProps {
    */
   readonly databaseName: string;
   /**
+   * Indicates whether the DB cluster should have deletion protection enabled.
+   *
+   * @default - true if `removalPolicy` is RETAIN, `undefined` otherwise, which will not enable deletion protection.
+   * To disable deletion protection after it has been enabled, you must explicitly set this value to `false`.
+   */
+  readonly deletionProtection?: boolean;
+  /**
    * How many instances? DevOps strongly recommends at least 3 in prod environments and only 1 in dev environments.
    * @default - passthrough
    */
@@ -324,6 +331,7 @@ export class Aurora extends Construct {
         encryptionKey,
         secretName: secretName.addPrefix(secretPrefix).pascal,
       },
+      deletionProtection: props.deletionProtection,
       engine: aws_rds.DatabaseClusterEngine.auroraPostgres({
         version,
       }),
