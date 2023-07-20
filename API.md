@@ -470,6 +470,7 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.cloudwatchLogsExports">cloudwatchLogsExports</a></code> | <code>string[]</code> | Which logs to export to CloudWatch. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.cloudwatchLogsRetention">cloudwatchLogsRetention</a></code> | <code>aws-cdk-lib.aws_logs.RetentionDays</code> | How long to retain logs published to CloudWatch logs. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.commonRotationUserOptions">commonRotationUserOptions</a></code> | <code>aws-cdk-lib.aws_rds.CommonRotationUserOptions</code> | Common password rotation options. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.deletionProtection">deletionProtection</a></code> | <code>boolean</code> | Indicates whether the DB cluster should have deletion protection enabled. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instances">instances</a></code> | <code>number</code> | How many instances? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.instanceType">instanceType</a></code> | <code>aws-cdk-lib.aws_ec2.InstanceType</code> | https://aws.amazon.com/blogs/aws/new-amazon-rds-on-graviton2-processors/ says we can use Graviton2 processors. Yay! |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.lambdaLogRetention">lambdaLogRetention</a></code> | <code>aws-cdk-lib.aws_logs.RetentionDays</code> | How long to retain logs published by provisioning lambdas. |
@@ -585,6 +586,19 @@ Common password rotation options.
 
 See
 https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds.CommonRotationUserOptions.html
+
+---
+
+##### `deletionProtection`<sup>Optional</sup> <a name="deletionProtection" id="@time-loop/cdk-aurora.AuroraProps.property.deletionProtection"></a>
+
+```typescript
+public readonly deletionProtection: boolean;
+```
+
+- *Type:* boolean
+- *Default:* true if `removalPolicy` is RETAIN, `undefined` otherwise, which will not enable deletion protection. To disable deletion protection after it has been enabled, you must explicitly set this value to `false`.
+
+Indicates whether the DB cluster should have deletion protection enabled.
 
 ---
 
