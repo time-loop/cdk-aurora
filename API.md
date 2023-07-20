@@ -488,6 +488,7 @@ const auroraProps: AuroraProps = { ... }
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProvisionDatabase">skipProvisionDatabase</a></code> | <code>boolean</code> | Skip provisioning the database? |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipProxy">skipProxy</a></code> | <code>boolean</code> | By default, we provide a proxy for non-manager users. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.skipUserProvisioning">skipUserProvisioning</a></code> | <code>boolean</code> | When bootstrapping, hold off on provisioning users in the database. |
+| <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.useDefaultDatabaseName">useDefaultDatabaseName</a></code> | <code>boolean</code> | If you want the `DB Name` to appear in the console, you need to set this to true. |
 | <code><a href="#@time-loop/cdk-aurora.AuroraProps.property.vpcSubnets">vpcSubnets</a></code> | <code>aws-cdk-lib.aws_ec2.SubnetSelection</code> | Used to decide which subnets to place the cluster in. |
 
 ---
@@ -851,6 +852,25 @@ The user provisioner will:
 - grant the r_reader or r_writer role to the user and it's `_clone`.
 
 NOTE: This is implicitly true if skipProvisionDatabase is true.
+
+---
+
+##### `useDefaultDatabaseName`<sup>Optional</sup> <a name="useDefaultDatabaseName" id="@time-loop/cdk-aurora.AuroraProps.property.useDefaultDatabaseName"></a>
+
+```typescript
+public readonly useDefaultDatabaseName: boolean;
+```
+
+- *Type:* boolean
+- *Default:* CREATE DATABASE via the provisioner, not Cfn
+
+If you want the `DB Name` to appear in the console, you need to set this to true.
+
+HOWEVER, this will cause any changes to the database name to be destructive.
+Which is why it is false by default.
+This causes the database name to be set via the `aws_rds.DatabaseCluster` construct.
+
+WARNING: enabling this after you've created your database will cause it to be destroyed and recreated.
 
 ---
 
