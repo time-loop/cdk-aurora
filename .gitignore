@@ -56,6 +56,15 @@ junit.xml
 .jsii
 tsconfig.json
 !/API.md
+test/.tmp
+test/baseline.integ.snapshot/asset.*
+test/baseline.integ.snapshot/**/asset.*
+test/baseline.integ.snapshot/cdk.out
+test/baseline.integ.snapshot/**/cdk.out
+test/baseline.integ.snapshot/manifest.json
+test/baseline.integ.snapshot/**/manifest.json
+test/baseline.integ.snapshot/tree.json
+test/baseline.integ.snapshot/**/tree.json
 !/codecov.yml
 !/.nvmrc
 !/.github/workflows/renovate.yml

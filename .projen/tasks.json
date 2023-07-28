@@ -148,6 +148,78 @@
         }
       ]
     },
+    "integ:baseline:assert": {
+      "name": "integ:baseline:assert",
+      "description": "assert the snapshot of integration test 'baseline'",
+      "steps": [
+        {
+          "exec": "[ -d \"test/baseline.integ.snapshot\" ] || (echo \"No snapshot available for integration test 'baseline'. Run 'projen integ:baseline:deploy' to capture.\" && exit 1)"
+        },
+        {
+          "exec": "cdk synth --app \"ts-node -P tsconfig.dev.json test/baseline.integ.ts\" --no-notices --no-version-reporting --no-asset-metadata --no-path-metadata -o test/.tmp/baseline.integ/assert.cdk.out > /dev/null"
+        },
+        {
+          "exec": "diff -r -x asset.* -x cdk.out -x manifest.json -x tree.json test/baseline.integ.snapshot/ test/.tmp/baseline.integ/assert.cdk.out/"
+        }
+      ]
+    },
+    "integ:baseline:deploy": {
+      "name": "integ:baseline:deploy",
+      "description": "deploy integration test 'baseline' and capture snapshot",
+      "steps": [
+        {
+          "exec": "rm -fr test/.tmp/baseline.integ/deploy.cdk.out"
+        },
+        {
+          "exec": "cdk deploy --app \"ts-node -P tsconfig.dev.json test/baseline.integ.ts\" --no-notices --no-version-reporting --no-asset-metadata --no-path-metadata '**' --require-approval=never -o test/.tmp/baseline.integ/deploy.cdk.out"
+        },
+        {
+          "exec": "rm -fr test/baseline.integ.snapshot"
+        },
+        {
+          "exec": "mv test/.tmp/baseline.integ/deploy.cdk.out test/baseline.integ.snapshot"
+        },
+        {
+          "spawn": "integ:baseline:destroy"
+        }
+      ]
+    },
+    "integ:baseline:destroy": {
+      "name": "integ:baseline:destroy",
+      "description": "destroy integration test 'baseline'",
+      "steps": [
+        {
+          "exec": "cdk destroy --app test/baseline.integ.snapshot '**' --no-version-reporting"
+        }
+      ]
+    },
+    "integ:baseline:snapshot": {
+      "name": "integ:baseline:snapshot",
+      "description": "update snapshot for integration test \"baseline\"",
+      "steps": [
+        {
+          "exec": "cdk synth --app \"ts-node -P tsconfig.dev.json test/baseline.integ.ts\" --no-notices --no-version-reporting --no-asset-metadata --no-path-metadata -o test/baseline.integ.snapshot > /dev/null"
+        }
+      ]
+    },
+    "integ:baseline:watch": {
+      "name": "integ:baseline:watch",
+      "description": "watch integration test 'baseline' (without updating snapshots)",
+      "steps": [
+        {
+          "exec": "cdk watch --app \"ts-node -P tsconfig.dev.json test/baseline.integ.ts\" --no-notices --no-version-reporting --no-asset-metadata --no-path-metadata '**' -o test/.tmp/baseline.integ/deploy.cdk.out"
+        }
+      ]
+    },
+    "integ:snapshot-all": {
+      "name": "integ:snapshot-all",
+      "description": "update snapshot for all integration tests",
+      "steps": [
+        {
+          "spawn": "integ:baseline:snapshot"
+        }
+      ]
+    },
     "package": {
       "name": "package",
       "description": "Creates the distribution package",
@@ -226,6 +298,9 @@
         },
         {
           "spawn": "eslint"
+        },
+        {
+          "spawn": "integ:baseline:assert"
         }
       ]
     },
