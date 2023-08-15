@@ -363,7 +363,10 @@ export class Aurora extends Construct {
     if (props.activityStream) {
       function activityStreamHandler(handler: string): aws_lambda_nodejs.NodejsFunction {
         const fn = new aws_lambda_nodejs.NodejsFunction(myConstruct, `ActivityStream${handler}`, {
-          bundling: { minify: true },
+          bundling: {
+            externalModules: ['aws-lambda'], // Lambda is just types
+            minify: true,
+          },
           entry: join(__dirname, 'aurora.activity-stream.ts'),
           handler,
           logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.THREE_MONTHS,
@@ -413,7 +416,7 @@ export class Aurora extends Construct {
 
     const provisionerProps: aws_lambda_nodejs.NodejsFunctionProps = {
       bundling: {
-        externalModules: ['aws-lambda', 'aws-sdk'], // Lambda is just types. SDK is explicitly provided.
+        externalModules: ['aws-lambda'], // Lambda is just types
         minify: true,
         nodeModules: ['pg', 'pg-format'],
       },
