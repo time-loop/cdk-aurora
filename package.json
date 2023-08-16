@@ -62,7 +62,7 @@
     "jsii-release": "^0.2.692",
     "multi-convention-namer": "0.1.12",
     "npm-check-updates": "^16",
-    "prettier": "^2.8.8",
+    "prettier": "^3.0.2",
     "projen": "^0.71.64",
     "sinon": "^13.0.2",
     "sinon-spy-utils": "^1.0.6",
