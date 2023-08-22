@@ -10,7 +10,6 @@
     },
     {
       "name": "@types/jest",
-      "version": "^27",
       "type": "build"
     },
     {
@@ -84,13 +83,12 @@
       "type": "build"
     },
     {
-      "name": "jest-junit",
-      "version": "^15",
+      "name": "jest",
       "type": "build"
     },
     {
-      "name": "jest",
-      "version": "^27",
+      "name": "jest-junit",
+      "version": "^15",
       "type": "build"
     },
     {
@@ -107,6 +105,11 @@
     },
     {
       "name": "jsii-release",
+      "type": "build"
+    },
+    {
+      "name": "jsii-rosetta",
+      "version": "5.0.*",
       "type": "build"
     },
     {
@@ -147,7 +150,6 @@
     },
     {
       "name": "ts-jest",
-      "version": "^27",
       "type": "build"
     },
     {
