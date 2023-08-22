@@ -2,6 +2,7 @@
 !/.gitattributes
 !/.projen/tasks.json
 !/.projen/deps.json
+!/renovate.json5
 !/.projen/files.json
 !/.github/workflows/pull-request-lint.yml
 !/.github/workflows/auto-approve.yml
@@ -31,6 +32,7 @@ jspm_packages/
 *.tgz
 .yarn-integrity
 .cache
+*.code-workspace
 .idea
 .yalc
 yalc.lock
@@ -61,4 +63,5 @@ tsconfig.json
 !/.github/workflows/renovate.yml
 !/.github/workflows/semgrep.yml
 !/.github/workflows/add-to-project.yml
-!/renovate.json5
+!/.github/workflows/update-projen-main.yml
+!/.github/workflows/add-to-update-projen-project.yml
