@@ -66,7 +66,7 @@
     "npm-check-updates": "^16",
     "prettier": "^3.0.2",
     "projen": "^0.72.21",
-    "sinon": "^13.0.2",
+    "sinon": "^15.2.0",
     "sinon-spy-utils": "^1.0.6",
     "standard-version": "^9",
     "ts-jest": "^29.1.1",
