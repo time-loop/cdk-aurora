@@ -167,6 +167,7 @@
     },
     {
       "name": "aws-sdk",
+      "version": "2.1333.0",
       "type": "bundled"
     },
     {
@@ -202,6 +203,7 @@
     },
     {
       "name": "aws-sdk",
+      "version": "2.1333.0",
       "type": "runtime"
     },
     {

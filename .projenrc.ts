@@ -1,6 +1,8 @@
 import { clickupCdk } from '@time-loop/clickup-projen';
 
-const bundledDeps = ['aws-lambda', 'aws-sdk', 'aws-xray-sdk-core', 'pg', 'pg-format'];
+// Pin SDK to 2.1333.0 because update looks like it breaks aws-sdk-mock
+// The Right Thing to do here is to upgrade to sdk v3, but... that's a pile of work.
+const bundledDeps = ['aws-lambda', 'aws-sdk@2.1333.0', 'aws-xray-sdk-core', 'pg', 'pg-format'];
 const peerDeps = ['constructs@^10.0.5', 'multi-convention-namer@^0.1.12'];
 
 const project = new clickupCdk.ClickUpCdkConstructLibrary({
