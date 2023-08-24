@@ -11,6 +11,7 @@ const project = new clickupCdk.ClickUpCdkConstructLibrary({
   cdkVersion: '2.78.0', // https://github.com/aws/aws-cdk/pull/25347 add missing PerformanceInsightRetention options
   defaultReleaseBranch: 'main',
   licensed: true,
+  workflowNodeVersion: '18.17.1',
 
   bundledDeps,
   deps: [...bundledDeps],
