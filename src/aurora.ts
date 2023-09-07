@@ -370,6 +370,7 @@ export class Aurora extends Construct {
           entry: join(__dirname, 'aurora.activity-stream.ts'),
           handler,
           logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.THREE_MONTHS,
+          memorySize: 512,
           tracing: aws_lambda.Tracing.ACTIVE,
           vpc: props.vpc,
           vpcSubnets,
@@ -424,6 +425,7 @@ export class Aurora extends Construct {
         MANAGER_SECRET_ARN: this.cluster.secret!.secretArn,
       },
       logRetention: props.lambdaLogRetention ?? aws_logs.RetentionDays.TWO_YEARS,
+      memorySize: 512,
       timeout: Duration.minutes(14), // since we're retrying connections, be patient.
       tracing: aws_lambda.Tracing.ACTIVE,
       vpc: props.vpc,
