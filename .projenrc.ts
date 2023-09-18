@@ -8,7 +8,7 @@ const peerDeps = ['constructs@^10.0.5', 'multi-convention-namer@^0.1.12'];
 const project = new clickupCdk.ClickUpCdkConstructLibrary({
   name: '@time-loop/cdk-aurora',
 
-  cdkVersion: '2.78.0', // https://github.com/aws/aws-cdk/pull/25347 add missing PerformanceInsightRetention options
+  cdkVersion: '2.94.0', // https://github.com/aws/aws-cdk/pull/26884 use modern python for rotator lambdas
   defaultReleaseBranch: 'main',
   licensed: true,
   workflowNodeVersion: '18.17.1',
