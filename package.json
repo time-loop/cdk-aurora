@@ -44,7 +44,7 @@
     "@types/sinon": "^10.0.16",
     "@typescript-eslint/eslint-plugin": "^6",
     "@typescript-eslint/parser": "^6",
-    "aws-cdk-lib": "2.78.0",
+    "aws-cdk-lib": "2.94.0",
     "aws-sdk-mock": "^5.8.0",
     "constructs": "10.0.5",
     "esbuild": "^0.19.2",
@@ -74,7 +74,7 @@
     "typescript": "^5.1.6"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.78.0",
+    "aws-cdk-lib": "^2.94.0",
     "constructs": "^10.0.5",
     "multi-convention-namer": "^0.1.12"
   },
