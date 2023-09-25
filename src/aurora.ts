@@ -8,7 +8,7 @@ import {
   aws_lambda_nodejs,
   aws_logs,
   aws_rds,
-  CfnMapping,
+  // CfnMapping,
   CfnOutput,
   custom_resources,
   CustomResource,
@@ -23,7 +23,8 @@ import {} from './aurora.provision-database';
 import { RdsUserProvisionerProps } from './aurora.provision-user';
 import { clusterArn } from './helpers';
 
-const passwordRotationVersion = '1.1.217';
+// cdk has caught up and blasted past this
+// const passwordRotationVersion = '1.1.217';
 
 // Workaround for bug https://github.com/aws/aws-sdk-js-v3/issues/3063#issuecomment-1188564123
 declare global {
@@ -409,10 +410,11 @@ export class Aurora extends Construct {
     }
 
     if (!props.skipManagerRotation) {
-      const managerRotation = this.cluster.addRotationSingleUser(props.commonRotationUserOptions);
+      // const managerRotation =
+      this.cluster.addRotationSingleUser(props.commonRotationUserOptions);
       // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
-      const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
-      managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
+      // const managerSarMapping = managerRotation.node.findChild('SARMapping') as CfnMapping;
+      // managerSarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
     }
 
     const provisionerProps: aws_lambda_nodejs.NodejsFunctionProps = {
@@ -516,13 +518,14 @@ export class Aurora extends Construct {
       );
 
       if (!props.skipAddRotationMultiUser) {
-        const rotation = this.cluster.addRotationMultiUser(user.pascal, {
+        // const rotation =
+        this.cluster.addRotationMultiUser(user.pascal, {
           secret,
           ...props.commonRotationUserOptions,
         });
         // https://github.com/aws/aws-cdk/issues/18249#issuecomment-1005121223
-        const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;
-        sarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
+        // const sarMapping = rotation.node.findChild('SARMapping') as CfnMapping;
+        // sarMapping.setValue('aws', 'semanticVersion', passwordRotationVersion);
       }
       return { userStr, secret };
     });
