@@ -69,7 +69,7 @@ export interface AuroraProps {
   readonly deletionProtection?: boolean;
   /**
    * How many instances? DevOps strongly recommends at least 3 in prod environments and only 1 in dev environments.
-   * @default - passthrough
+   * @default - 2 one for writer and one for reader
    */
   readonly instances?: number;
   /**
@@ -319,6 +319,15 @@ export class Aurora extends Construct {
     };
     const parameters = props.parameterGroup || props.parameters ? props.parameters : defaultParameters;
 
+    const instanceProps = {
+      performanceInsightEncryptionKey: encryptionKey,
+      performanceInsightRetention: props.performanceInsightRetention,
+      instanceType,
+      isFromLegacyInstanceProps: true,
+    };
+    // default to 1 reader
+    const nReaders = !props.instances ? 1 : props.instances - 1;
+
     this.cluster = new aws_rds.DatabaseCluster(this, 'Database', {
       backup: {
         retention: props.retention ?? Duration.days(1),
@@ -337,15 +346,21 @@ export class Aurora extends Construct {
         version,
       }),
       instanceIdentifierBase: id.pascal,
-      instanceProps: {
-        instanceType,
-        performanceInsightEncryptionKey: encryptionKey,
-        performanceInsightRetention: props.performanceInsightRetention,
-        securityGroups: this.securityGroups,
-        vpc: props.vpc,
-        vpcSubnets,
-      },
-      instances: props.instances,
+      securityGroups: this.securityGroups,
+      vpc: props.vpc,
+      vpcSubnets,
+      // Writer instance id is always 1
+      writer: aws_rds.ClusterInstance.provisioned('Instance1', {
+        ...instanceProps,
+        instanceIdentifier: `${id.pascal}1`,
+      }),
+      // Reader instance id starts from 2
+      readers: Array.from(Array(nReaders).keys()).map((i) =>
+        aws_rds.ClusterInstance.provisioned(`Instance${i + 2}`, {
+          ...instanceProps,
+          instanceIdentifier: `${id.pascal}${i + 2}`,
+        }),
+      ),
       parameterGroup: props.parameterGroup,
       parameters: parameters,
       removalPolicy: props.removalPolicy,
