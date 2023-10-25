@@ -609,7 +609,7 @@ public readonly instances: number;
 ```
 
 - *Type:* number
-- *Default:* passthrough
+- *Default:* 2 one for writer and one for reader
 
 How many instances?
 
