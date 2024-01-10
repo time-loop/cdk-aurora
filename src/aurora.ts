@@ -277,6 +277,7 @@ export class Aurora extends Construct {
 
     const encryptionKey = (this.kmsKey = props.kmsKey);
     Tags.of(this).add('abac-eng-dba-squad', 'read'); // needed for DBA's to manage cluster.
+    
     const instanceType =
       props.instanceType || aws_ec2.InstanceType.of(aws_ec2.InstanceClass.T4G, aws_ec2.InstanceSize.MEDIUM);
     if (instanceType.architecture !== aws_ec2.InstanceArchitecture.ARM_64) {
