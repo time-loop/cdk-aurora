@@ -262,10 +262,7 @@
       },
       "steps": [
         {
-          "exec": "yarn upgrade npm-check-updates"
-        },
-        {
-          "exec": "npm-check-updates --upgrade --target=minor --peer --dep=dev,peer,prod,optional --filter=projen,@time-loop/clickup-projen"
+          "exec": "npx npm-check-updates@16 --upgrade --target=minor --peer --dep=dev,peer,prod,optional --filter=projen,@time-loop/clickup-projen"
         },
         {
           "exec": "yarn install --check-files"
@@ -289,16 +286,13 @@
       },
       "steps": [
         {
-          "exec": "yarn upgrade npm-check-updates"
-        },
-        {
-          "exec": "npm-check-updates --upgrade --target=minor --peer --dep=dev,peer,prod,optional --filter=@time-loop/clickup-projen,@types/aws-lambda,@types/jest,@types/node,@types/pg,@types/pg-format,@types/sinon,@typescript-eslint/eslint-plugin,@typescript-eslint/parser,aws-sdk-mock,esbuild,eslint-config-prettier,eslint-import-resolver-node,eslint-import-resolver-typescript,eslint-plugin-import,eslint-plugin-prettier,eslint,jest,jest-junit,jsii-diff,jsii-docgen,jsii-pacmak,jsii-release,npm-check-updates,prettier,projen,sinon,sinon-spy-utils,standard-version,ts-jest,ts-node,typescript,aws-lambda,aws-xray-sdk-core,pg,pg-format,aws-cdk-lib,constructs,multi-convention-namer"
+          "exec": "npx npm-check-updates@16 --upgrade --target=minor --peer --dep=dev,peer,prod,optional --filter=@time-loop/clickup-projen,@types/aws-lambda,@types/jest,@types/node,@types/pg,@types/pg-format,@types/sinon,@typescript-eslint/eslint-plugin,@typescript-eslint/parser,aws-sdk-mock,esbuild,eslint-config-prettier,eslint-import-resolver-typescript,eslint-plugin-import,eslint-plugin-prettier,eslint,jest,jest-junit,jsii-diff,jsii-docgen,jsii-pacmak,jsii-release,prettier,projen,sinon,sinon-spy-utils,standard-version,ts-jest,ts-node,typescript,aws-lambda,aws-xray-sdk-core,pg,pg-format,aws-cdk-lib,constructs,multi-convention-namer"
         },
         {
           "exec": "yarn install --check-files"
         },
         {
-          "exec": "yarn upgrade @time-loop/clickup-projen @types/aws-lambda @types/jest @types/node @types/pg @types/pg-format @types/sinon @typescript-eslint/eslint-plugin @typescript-eslint/parser aws-sdk-mock esbuild eslint-config-prettier eslint-import-resolver-node eslint-import-resolver-typescript eslint-plugin-import eslint-plugin-prettier eslint jest jest-junit jsii-diff jsii-docgen jsii-pacmak jsii-release npm-check-updates prettier projen sinon sinon-spy-utils standard-version ts-jest ts-node typescript aws-lambda aws-xray-sdk-core pg pg-format aws-cdk-lib constructs multi-convention-namer"
+          "exec": "yarn upgrade @time-loop/clickup-projen @types/aws-lambda @types/jest @types/node @types/pg @types/pg-format @types/sinon @typescript-eslint/eslint-plugin @typescript-eslint/parser aws-sdk-mock esbuild eslint-config-prettier eslint-import-resolver-typescript eslint-plugin-import eslint-plugin-prettier eslint jest jest-junit jsii-diff jsii-docgen jsii-pacmak jsii-release prettier projen sinon sinon-spy-utils standard-version ts-jest ts-node typescript aws-lambda aws-xray-sdk-core pg pg-format aws-cdk-lib constructs multi-convention-namer"
         },
         {
           "exec": "npx projen"
