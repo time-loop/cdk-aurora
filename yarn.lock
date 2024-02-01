@@ -2026,10 +2026,10 @@
     "@smithy/util-buffer-from" "^2.0.0"
     tslib "^2.5.0"
 
-"@time-loop/clickup-projen@^0.0.198":
-  version "0.0.198"
-  resolved "https://npm.pkg.github.com/download/@time-loop/clickup-projen/0.0.198/a6b718239eac7aa328e354893276101ae53a77b7#a6b718239eac7aa328e354893276101ae53a77b7"
-  integrity sha512-d+t3K8B5gsEqNIGezTmMcly3EvTMuRR9uPKdl5JEiC899uux+O9XfFfajpKag9FFI34C5cXgW38C1snItRTZwg==
+"@time-loop/clickup-projen@^0.0.199":
+  version "0.0.199"
+  resolved "https://npm.pkg.github.com/download/@time-loop/clickup-projen/0.0.199/36a45f1819ebbfd94efaa576c1d8e72ab029e85e#36a45f1819ebbfd94efaa576c1d8e72ab029e85e"
+  integrity sha512-oMhtb/Pjy9Ha4P+i2dtahCFjbx83819aTHYWopsyKTU3n4Sewp3jFXMgeBTRq1Jm/YV5zNAgYhMqp/XzhoowgA==
   dependencies:
     cson-parser "^4.0.9"
     projen "^0.77.4"
@@ -6274,26 +6274,7 @@ process-nextick-args@~2.0.0:
   resolved "https://registry.yarnpkg.com/process-nextick-args/-/process-nextick-args-2.0.1.tgz#7820d9b16120cc55ca9ae7792680ae7dba6d7fe2"
   integrity sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==
 
-projen@^0.73.45:
-  version "0.73.45"
-  resolved "https://registry.yarnpkg.com/projen/-/projen-0.73.45.tgz#7c0ecc73f4e9db35eafcf2d9a637c1e75f125220"
-  integrity sha512-JEYR1l710BmSGd+JoPTjQplH3hZoYsMqm8JCBb+q068vpvjXMCSKUzjOiJOLnTU7Z8/+Lm3BevEH/WY5Qoq99w==
-  dependencies:
-    "@iarna/toml" "^2.2.5"
-    case "^1.6.3"
-    chalk "^4.1.2"
-    comment-json "4.2.2"
-    conventional-changelog-config-spec "^2.1.0"
-    fast-json-patch "^3.1.1"
-    glob "^8"
-    ini "^2.0.0"
-    semver "^7.5.4"
-    shx "^0.3.4"
-    xmlbuilder2 "^3.1.1"
-    yaml "^2.2.2"
-    yargs "^17.7.2"
-
-projen@^0.77.4:
+projen@^0.77.4, projen@^0.77.6:
   version "0.77.6"
   resolved "https://registry.yarnpkg.com/projen/-/projen-0.77.6.tgz#480c1af4246bba55e8d0732ff7a9d1804ce414be"
   integrity sha512-nXbbDr81UjfLjCfVfHGfGPIjiN7INSyMUa52FYupX0TmybMq+CnvX8o0O45feOLLhsifNq7EHXtF+hgBtpBb8A==
@@ -7109,9 +7090,9 @@ ts-api-utils@^1.0.1:
   integrity sha512-Cbu4nIqnEdd+THNEsBdkolnOXhg0I8XteoHaEKgvsxpsbWda4IsUut2c187HxywQCvveojow0Dgw/amxtSKVkQ==
 
 ts-deepmerge@^6.2.0:
-  version "6.2.0"
-  resolved "https://registry.yarnpkg.com/ts-deepmerge/-/ts-deepmerge-6.2.0.tgz#77554381a4884d66cab799470bc2620a1c9d84e8"
-  integrity sha512-2qxI/FZVDPbzh63GwWIZYE7daWKtwXZYuyc8YNq0iTmMUwn4mL0jRLsp6hfFlgbdRSR4x2ppe+E86FnvEpN7Nw==
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/ts-deepmerge/-/ts-deepmerge-6.2.1.tgz#4d564b44bc2a69e35a0b08bfa904ef176372e7dd"
+  integrity sha512-8CYSLazCyj0DJDpPIxOFzJG46r93uh6EynYjuey+bxcLltBeqZL7DMfaE5ZPzZNFlav7wx+2TDa/mBl8gkTYzw==
 
 ts-jest@^29.1.1:
   version "29.1.1"
