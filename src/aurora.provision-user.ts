@@ -377,7 +377,7 @@ export class Methods {
   public async createUser(client: Client, username: string): Promise<void> {
     try {
       const res = await client.query(`SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = $1`, [username]);
-      if (res.rowCount > 0) {
+      if (res.rowCount ?? 0 > 0) {
         console.log(`User ${username} already exists. Skipping creation.`);
       } else {
         const sql = format('CREATE USER %I PASSWORD NULL', username);

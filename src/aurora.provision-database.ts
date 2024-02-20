@@ -380,7 +380,7 @@ export class Methods {
   public async createRole(client: Client, role: string): Promise<void> {
     try {
       const res = await client.query(`SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = $1`, [role]);
-      if (res.rowCount > 0) {
+      if (res.rowCount ?? 0 > 0) {
         console.log(`Role ${role} already exists. Skipping creation.`);
       } else {
         const sql = format('CREATE ROLE %I', role);
@@ -407,7 +407,7 @@ export class Methods {
     try {
       // Does the db already exist?
       const res = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', [databaseName]);
-      if (res.rowCount > 0) {
+      if (res.rowCount ?? 0 > 0) {
         console.log(`Database ${databaseName} already exists.`);
         return;
       }
