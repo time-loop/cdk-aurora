@@ -174,7 +174,7 @@ export interface AuroraProps {
    * Postgres version
    * Be aware of version limitations
    * See https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraFeaturesRegionsDBEngines.grids.html#Concepts.Aurora_Fea_Regions_DB-eng.Feature.RDS_Proxy
-   * @default 12.8
+   * @default 15.5
    */
   readonly postgresEngineVersion?: aws_rds.AuroraPostgresEngineVersion;
   /**
@@ -289,7 +289,7 @@ export class Aurora extends Construct {
       props.secretPrefix instanceof Namer ? props.secretPrefix : new Namer([props.secretPrefix ?? '']);
 
     const secretName = id.addSuffix(['manager']);
-    const version = props.postgresEngineVersion ?? aws_rds.AuroraPostgresEngineVersion.VER_12_8;
+    const version = props.postgresEngineVersion ?? aws_rds.AuroraPostgresEngineVersion.VER_15_5;
 
     const vpcSubnets = (this.vpcSubnets = props.vpcSubnets ?? { subnetType: aws_ec2.SubnetType.PRIVATE_WITH_EGRESS });
 
@@ -346,6 +346,7 @@ export class Aurora extends Construct {
         version,
       }),
       instanceIdentifierBase: id.pascal,
+      instanceUpdateBehaviour: aws_rds.InstanceUpdateBehaviour.ROLLING,
       securityGroups: this.securityGroups,
       vpc: props.vpc,
       vpcSubnets,

@@ -469,7 +469,7 @@ public readonly postgresEngineVersion: AuroraPostgresEngineVersion;
 ```
 
 - *Type:* aws-cdk-lib.aws_rds.AuroraPostgresEngineVersion
-- *Default:* 12.8
+- *Default:* 15.5
 
 Postgres version Be aware of version limitations See https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraFeaturesRegionsDBEngines.grids.html#Concepts.Aurora_Fea_Regions_DB-eng.Feature.RDS_Proxy.
 

@@ -188,7 +188,7 @@ describe('Aurora', () => {
     });
 
     it('activityStream', () => {
-      const postgresEngineVersion = AuroraPostgresEngineVersion.VER_11_16;
+      const postgresEngineVersion = AuroraPostgresEngineVersion.VER_11_21;
       createAurora({ ...defaultAuroraProps, activityStream: true, postgresEngineVersion });
       template.resourceCountIs('AWS::Lambda::Function', 10);
       template.resourceCountIs('Custom::AuroraActivityStream', 1);
