@@ -1,10 +1,5 @@
-import {
-  CloudFormationCustomResourceCreateEvent,
-  CloudFormationCustomResourceDeleteEvent,
-  CloudFormationCustomResourceEventCommon,
-  CloudFormationCustomResourceUpdateEvent,
-} from 'aws-lambda';
-import AWSMock from 'aws-sdk-mock';
+import { RDSClient, StartActivityStreamCommand, StopActivityStreamCommand } from '@aws-sdk/client-rds';
+import { mockClient } from 'aws-sdk-client-mock';
 import sinon from 'sinon';
 
 import { Methods } from '../src/aurora.activity-stream';
@@ -13,15 +8,11 @@ sinon.stub(console, 'log');
 
 const m = new Methods();
 const getClusterArnStub = sinon.stub(Methods.prototype, 'getClusterArn');
-const startActivityStreamStub = sinon.stub();
-const stopActivityStreamStub = sinon.stub();
-AWSMock.mock('RDS', 'startActivityStream', startActivityStreamStub);
-AWSMock.mock('RDS', 'stopActivityStream', stopActivityStreamStub);
+const rdsMock = mockClient(RDSClient);
 
 beforeEach(() => {
   getClusterArnStub.reset();
-  startActivityStreamStub.reset();
-  stopActivityStreamStub.reset();
+  rdsMock.reset()
 });
 
 const resourcePropertiesBase = {
@@ -30,7 +21,7 @@ const resourcePropertiesBase = {
   kmsKeyId: 'fakeKmsKeyId',
 };
 
-const eventBase: CloudFormationCustomResourceEventCommon = {
+const eventBase = {
   LogicalResourceId: 'fakeLogicalResourceId',
   RequestId: 'fakeRequestId',
   ResourceType: 'Custom::RdsUser',
@@ -44,7 +35,7 @@ const eventBase: CloudFormationCustomResourceEventCommon = {
 const fakeClusterArn = 'arn:aws:rds:fakeRegion:fakeAccountId:cluster:fakeClusterId';
 
 describe('onCreate', () => {
-  const createEvent: CloudFormationCustomResourceCreateEvent = {
+  const createEvent = {
     ...eventBase,
     RequestType: 'Create',
     ResourceProperties: {
@@ -59,23 +50,24 @@ describe('onCreate', () => {
     const r = await m.onCreate(createEvent, 'fakeLogStreamName', 'fakeInvokedFunctionArn');
     expect(r.Status).toEqual('FAILED');
     expect(r.Reason).toMatch(`not-a-cluster-arn`);
-    expect(startActivityStreamStub.callCount).toEqual(0);
+    expect(rdsMock.calls().length).toEqual(0);
   });
 
   it('fails when startActivityStream fails', async () => {
     getClusterArnStub.resolves(fakeClusterArn);
-    startActivityStreamStub.resolves({
+    rdsMock.on(StartActivityStreamCommand).resolves({
       ApplyImmediately: true,
       KmsKeyId: 'fakeKmsKeyId',
       KinesisStreamName: undefined,
       Mode: 'async',
-      Status: 'failed',
+      Status: 'stopping',
     });
     const r = await m.onCreate(createEvent, 'fakeLogStreamName', 'fakeInvokedFunctionArn');
     expect(r.Status).toEqual('FAILED');
     expect(r.PhysicalResourceId).toMatch('none');
-    expect(startActivityStreamStub.callCount).toEqual(1);
-    expect(startActivityStreamStub.args[0][0]).toEqual({
+    expect(rdsMock.calls().length).toEqual(1);
+    const call = rdsMock.calls()[0];
+    expect(call.args[0].input).toEqual({
       ApplyImmediately: true,
       KmsKeyId: 'fakeKmsKeyId',
       Mode: 'async',
@@ -85,7 +77,7 @@ describe('onCreate', () => {
 
   it('succeeds', async () => {
     getClusterArnStub.resolves(fakeClusterArn);
-    startActivityStreamStub.resolves({
+    rdsMock.on(StartActivityStreamCommand).resolves({
       ApplyImmediately: true,
       KmsKeyId: 'fakeKmsKeyId',
       KinesisStreamName: 'fakeKinesisStreamName',
@@ -95,8 +87,9 @@ describe('onCreate', () => {
     const r = await m.onCreate(createEvent, 'fakeLogStreamName', 'fakeInvokedFunctionArn');
     expect(r.Status).toEqual('SUCCESS');
     expect(r.PhysicalResourceId).toMatch('fakeKinesisStreamName');
-    expect(startActivityStreamStub.callCount).toEqual(1);
-    expect(startActivityStreamStub.args[0][0]).toEqual({
+    expect(rdsMock.calls().length).toEqual(1);
+    const call = rdsMock.calls()[0];
+    expect(call.args[0].input).toEqual({
       ApplyImmediately: true,
       KmsKeyId: 'fakeKmsKeyId',
       Mode: 'async',
@@ -106,7 +99,7 @@ describe('onCreate', () => {
 });
 
 describe('onUpdate', () => {
-  const updateEvent: CloudFormationCustomResourceUpdateEvent = {
+  const updateEvent = {
     ...eventBase,
     OldResourceProperties: {},
     PhysicalResourceId: 'fakePhysicalResourceId',
@@ -115,14 +108,13 @@ describe('onUpdate', () => {
 
   it('does nothing and succeeds', async () => {
     const r = await m.onUpdate(updateEvent, 'fakeLogStreamName');
-    expect(startActivityStreamStub.callCount).toEqual(0);
-    expect(stopActivityStreamStub.callCount).toEqual(0);
+    expect(rdsMock.calls().length).toEqual(0);
     expect(r.Status).toEqual('SUCCESS');
   });
 });
 
 describe('onDelete', () => {
-  const deleteEvent: CloudFormationCustomResourceDeleteEvent = {
+  const deleteEvent = {
     ...eventBase,
     PhysicalResourceId: 'fakePhysicalResourceId',
     RequestType: 'Delete',
@@ -141,14 +133,18 @@ describe('onDelete', () => {
 
   it('success', async () => {
     getClusterArnStub.resolves('arn:aws:rds:us-east-1:123456789012:cluster:aurora-cluster-1');
-    stopActivityStreamStub.resolves({ foo: 'bar' });
+    rdsMock.on(StopActivityStreamCommand).resolves({
+      KmsKeyId: 'fakeKmsKeyId',
+      KinesisStreamName: 'fakeKinesisStreamName',
+      Status: 'stopping',
+    });
 
     const r = await m.onDelete(deleteEvent, 'fakeLogStreamName');
     expect(r.Status).toEqual('SUCCESS');
     expect(getClusterArnStub.callCount).toEqual(1);
-    expect(startActivityStreamStub.callCount).toEqual(0);
-    expect(stopActivityStreamStub.callCount).toEqual(1);
-    expect(stopActivityStreamStub.args[0][0]).toEqual({
+    expect(rdsMock.calls().length).toEqual(1);
+    const call = rdsMock.calls()[0];
+    expect(call.args[0].input).toEqual({
       ApplyImmediately: true,
       ResourceArn: 'arn:aws:rds:us-east-1:123456789012:cluster:aurora-cluster-1',
     });

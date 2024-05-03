@@ -1,7 +1,12 @@
-import * as awsLambda from 'aws-lambda';
-import * as _awsSdk from 'aws-sdk';
-import * as awsXray from 'aws-xray-sdk-core';
-const awsSdk = awsXray.captureAWS(_awsSdk);
+import {
+  RDSClient,
+  DescribeDBClustersCommand,
+  StartActivityStreamCommand,
+  StopActivityStreamCommand,
+} from '@aws-sdk/client-rds';
+import { captureAWSv3Client } from 'aws-xray-sdk-core';
+
+const rdsClient = captureAWSv3Client(new RDSClient());
 
 export interface ActivityStreamConstructProps {
   /**
@@ -30,7 +35,15 @@ export enum CfnRequestType {
   DELETE = 'Delete',
 }
 
-export interface IsCompleteEvent extends awsLambda.CloudFormationCustomResourceEventCommon {
+export interface IsCompleteEvent {
+  LogicalResourceId: string,
+  RequestId: string,
+  ResourceType: string,
+  ResponseURL: string,
+  ResourceProperties?: { clusterId?: string, ServiceToken?: string },
+  ServiceToken: string,
+  StackId: string,
+
   PhysicalResourceId: string;
   RequestType: CfnRequestType;
 }
@@ -58,10 +71,9 @@ export class Methods {
    * @returns
    */
   async getClusterArn(clusterId: string): Promise<string> {
-    const rds = new awsSdk.RDS();
-    const describe = await rds
-      .describeDBClusters({ Filters: [{ Name: 'db-cluster-id', Values: [clusterId] }] })
-      .promise();
+    const describe = await rdsClient.send(
+      new DescribeDBClustersCommand({ Filters: [{ Name: 'db-cluster-id', Values: [clusterId] }] }),
+    );
 
     if (!describe.DBClusters || describe.DBClusters.length < 1) {
       return 'Not found';
@@ -79,12 +91,8 @@ export class Methods {
    * @param invokedFunctionArn
    * @returns
    */
-  public async onCreate(
-    event: awsLambda.CloudFormationCustomResourceCreateEvent,
-    logStreamName: string,
-    invokedFunctionArn: string,
-  ): Promise<awsLambda.CloudFormationCustomResourceResponse> {
-    const resultFactory = (props: CreateResultProps): awsLambda.CloudFormationCustomResourceResponse => {
+  public async onCreate( event: any, logStreamName: string, invokedFunctionArn: string ): Promise<any> {
+    const resultFactory = (props: CreateResultProps): any => {
       return {
         ...props,
         LogicalResourceId: event.LogicalResourceId,
@@ -105,15 +113,14 @@ export class Methods {
     }
     console.log(`dbClusterArn: ${ResourceArn}`);
 
-    const rds = new awsSdk.RDS();
-    const result = await rds
-      .startActivityStream({
+    const result = await rdsClient.send(
+      new StartActivityStreamCommand({
         ResourceArn,
         KmsKeyId: event.ResourceProperties.kmsKeyId,
         Mode: 'async',
         ApplyImmediately: true,
-      })
-      .promise();
+      }),
+    );
 
     console.log(`startActivityStream: ${JSON.stringify(result)}`);
 
@@ -139,10 +146,7 @@ export class Methods {
    * @param logStreamName
    * @returns
    */
-  public async onUpdate(
-    event: awsLambda.CloudFormationCustomResourceUpdateEvent,
-    logStreamName: string,
-  ): Promise<awsLambda.CloudFormationCustomResourceResponse> {
+  public async onUpdate( event: any, logStreamName: string ): Promise<any> {
     return {
       LogicalResourceId: event.LogicalResourceId,
       PhysicalResourceId: event.PhysicalResourceId,
@@ -160,10 +164,7 @@ export class Methods {
    * @param logStreamName
    * @returns
    */
-  public async onDelete(
-    event: awsLambda.CloudFormationCustomResourceDeleteEvent,
-    logStreamName: string,
-  ): Promise<awsLambda.CloudFormationCustomResourceResponse> {
+  public async onDelete( event: any, logStreamName: string ): Promise<any> {
     const resultFactory = (props?: DeleteResultProps) => {
       return {
         Data: props?.Data,
@@ -184,8 +185,9 @@ export class Methods {
       });
     }
 
-    const rds = new awsSdk.RDS();
-    const response = await rds.stopActivityStream({ ResourceArn: dbClusterArn, ApplyImmediately: true }).promise();
+    const response = await // The `.promise()` call might be on an JS SDK v2 client API.
+    // If yes, please remove .promise(). If not, remove this comment.
+    rdsClient.send(new StopActivityStreamCommand({ ResourceArn: dbClusterArn, ApplyImmediately: true }));
 
     // Log it but don't risk locking the stack by checking it, for now.
     console.log(`stopActivityStream response: ${JSON.stringify(response)}`);
@@ -194,24 +196,20 @@ export class Methods {
 }
 
 export const OnEvent = (
-  event: awsLambda.CloudFormationCustomResourceEvent,
-  context: awsLambda.Context,
-  _callback?: awsLambda.Callback,
-): Promise<awsLambda.CloudFormationCustomResourceResponse> => {
+  event: any,
+  context: any,
+  _callback?: any,
+): Promise<any> => {
   console.log(`onEvent event: ${JSON.stringify(event)}`);
   const m = new Methods();
   try {
     switch (event.RequestType) {
       case CfnRequestType.CREATE:
-        return m.onCreate(
-          event as awsLambda.CloudFormationCustomResourceCreateEvent,
-          context.logStreamName,
-          context.invokedFunctionArn,
-        );
+        return m.onCreate( event, context.logStreamName, context.invokedFunctionArn );
       case CfnRequestType.UPDATE:
-        return m.onUpdate(event as awsLambda.CloudFormationCustomResourceUpdateEvent, context.logStreamName);
+        return m.onUpdate(event, context.logStreamName);
       case CfnRequestType.DELETE:
-        return m.onDelete(event as awsLambda.CloudFormationCustomResourceDeleteEvent, context.logStreamName);
+        return m.onDelete(event, context.logStreamName);
       default:
         return Promise.reject(`Unknown event RequestType in event ${event}`);
     }
@@ -221,11 +219,11 @@ export const OnEvent = (
   }
 };
 
-export const IsComplete = async (
+export async function IsComplete(
   event: IsCompleteEvent,
-  _context?: awsLambda.Context,
-  _callback?: awsLambda.Callback,
-): Promise<IsCompleteResult> => {
+  _context?: any,
+  _callback?: any,
+): Promise<IsCompleteResult> {
   console.log(`isComplete event: ${JSON.stringify(event)}`);
 
   if (event.RequestType == CfnRequestType.UPDATE) {
@@ -233,10 +231,13 @@ export const IsComplete = async (
   }
 
   try {
-    const rds = new awsSdk.RDS();
-    const result = await rds
-      .describeDBClusters({ Filters: [{ Name: 'db-cluster-id', Values: [event.ResourceProperties.clusterId] }] })
-      .promise();
+    const result = await // The `.promise()` call might be on an JS SDK v2 client API.
+    // If yes, please remove .promise(). If not, remove this comment.
+    rdsClient.send(
+      new DescribeDBClustersCommand({
+        Filters: [{ Name: 'db-cluster-id', Values: [event.ResourceProperties!.clusterId!] }],
+      }),
+    );
     if (result.DBClusters?.length != 1) {
       return { IsComplete: true }; // can't find the cluster, so... I guess things are done?
     }

@@ -35,8 +35,7 @@
     "organization": true
   },
   "devDependencies": {
-    "@time-loop/clickup-projen": "^1.7.2",
-    "@types/aws-lambda": "^8.10.137",
+    "@time-loop/clickup-projen": "^1.8.1",
     "@types/jest": "^29.5.12",
     "@types/node": "^18",
     "@types/pg": "^8.11.6",
@@ -44,8 +43,8 @@
     "@types/sinon": "^17.0.3",
     "@typescript-eslint/eslint-plugin": "^6",
     "@typescript-eslint/parser": "^6",
-    "aws-cdk-lib": "2.94.0",
-    "aws-sdk-mock": "^5.9.0",
+    "aws-cdk-lib": "2.140.0",
+    "aws-sdk-client-mock": "^4.0.0",
     "constructs": "10.0.5",
     "esbuild": "^0.20.2",
     "eslint": "^8",
@@ -63,7 +62,7 @@
     "jsii-rosetta": "~5.3.0",
     "multi-convention-namer": "0.1.12",
     "prettier": "^3.2.5",
-    "projen": "^0.80.20",
+    "projen": "^0.81.7",
     "sinon": "^17.0.1",
     "sinon-spy-utils": "^1.0.6",
     "standard-version": "^9",
@@ -72,20 +71,20 @@
     "typescript": "~5.3.0"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.94.0",
+    "aws-cdk-lib": "^2.140.0",
     "constructs": "^10.0.5",
     "multi-convention-namer": "^0.1.12"
   },
   "dependencies": {
-    "aws-lambda": "^1.0.7",
-    "aws-sdk": "2.1333.0",
+    "@aws-sdk/client-rds": "^3.568.0",
+    "@aws-sdk/client-secrets-manager": "^3.568.0",
     "aws-xray-sdk-core": "^3.6.0",
     "pg": "^8.11.5",
     "pg-format": "^1.0.4"
   },
   "bundledDependencies": [
-    "aws-lambda",
-    "aws-sdk",
+    "@aws-sdk/client-rds",
+    "@aws-sdk/client-secrets-manager",
     "aws-xray-sdk-core",
     "pg",
     "pg-format"

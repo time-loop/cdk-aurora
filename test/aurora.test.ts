@@ -313,7 +313,7 @@ describe('Aurora', () => {
     it('passwordRotationIntervalInDays', () => {
       createAurora({ ...defaultAuroraProps, commonRotationUserOptions: { automaticallyAfter: Duration.days(10) } });
       template.hasResourceProperties('AWS::SecretsManager::RotationSchedule', {
-        RotationRules: { AutomaticallyAfterDays: 10 },
+        RotationRules: { ScheduleExpression: 'rate(10 days)' },
       });
     });
     it('skipProvisionDatabase', () => {

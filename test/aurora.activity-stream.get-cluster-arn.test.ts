@@ -1,4 +1,5 @@
-import AWSMock from 'aws-sdk-mock';
+import { RDSClient, DescribeDBClustersCommand } from '@aws-sdk/client-rds';
+import { mockClient } from 'aws-sdk-client-mock';
 import sinon from 'sinon';
 
 import { Methods } from '../src/aurora.activity-stream';
@@ -7,15 +8,14 @@ sinon.stub(console, 'log');
 
 describe('getClusterArn', () => {
   const m = new Methods();
-  const describeDBClustersStub = sinon.stub();
-  AWSMock.mock('RDS', 'describeDBClusters', describeDBClustersStub);
+  const rdsMock = mockClient(RDSClient);
 
   beforeEach(() => {
-    describeDBClustersStub.reset();
+    rdsMock.reset();
   });
 
   it('found', () => {
-    describeDBClustersStub.yields(null, {
+    rdsMock.on(DescribeDBClustersCommand).resolves({
       DBClusters: [
         {
           DBClusterArn: 'arn:aws:rds:us-east-1:123456789012:cluster:aurora-cluster-1',
@@ -28,7 +28,7 @@ describe('getClusterArn', () => {
     });
   });
   it('not found', () => {
-    describeDBClustersStub.yields(null, {
+    rdsMock.on(DescribeDBClustersCommand).resolves({
       DBClusters: [],
     });
 
@@ -37,7 +37,7 @@ describe('getClusterArn', () => {
     });
   });
   it('found multiple', () => {
-    describeDBClustersStub.yields(null, {
+    rdsMock.on(DescribeDBClustersCommand).resolves({
       DBClusters: [
         {
           DBClusterArn: 'arn:aws:rds:us-east-1:123456789012:cluster:aurora-cluster-1',
