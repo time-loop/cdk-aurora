@@ -2060,13 +2060,13 @@
     "@smithy/util-buffer-from" "^2.2.0"
     tslib "^2.6.2"
 
-"@time-loop/clickup-projen@^1.5.3":
-  version "1.5.3"
-  resolved "https://npm.pkg.github.com/download/@time-loop/clickup-projen/1.5.3/d8afaad21d85663e75291323716008ffeba46885#d8afaad21d85663e75291323716008ffeba46885"
-  integrity sha512-I3ZefhM9DlAYaRGqVZie77vZHzHapU8AK0DAjq2dqymaceSzs2sudiPr2+mDW5IKNyWgsM80MO0SOJGdycz6yg==
+"@time-loop/clickup-projen@^1.7.2":
+  version "1.7.2"
+  resolved "https://npm.pkg.github.com/download/@time-loop/clickup-projen/1.7.2/178ad8d45db4ce1de02e769a6d5085fc4430e0c9#178ad8d45db4ce1de02e769a6d5085fc4430e0c9"
+  integrity sha512-rWBFayFjcyiztjFWK+3Yqj112+9LNKYZlVY9/ao9PTKblM+h9Wp07J8Ss0GtQXgMOq0vhhj5R0f5lc46vUZmKQ==
   dependencies:
     cson-parser "^4.0.9"
-    projen "^0.80.4"
+    projen "^0.81.2"
     semver "^7.6.0"
     ts-deepmerge "^6.2.1"
 
@@ -6181,10 +6181,10 @@ process-nextick-args@~2.0.0:
   resolved "https://registry.yarnpkg.com/process-nextick-args/-/process-nextick-args-2.0.1.tgz#7820d9b16120cc55ca9ae7792680ae7dba6d7fe2"
   integrity sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==
 
-projen@^0.78.13:
-  version "0.78.13"
-  resolved "https://registry.yarnpkg.com/projen/-/projen-0.78.13.tgz#5c6693ababa4f2e7d93759c722a35d41c9c2e691"
-  integrity sha512-ihL1lcfmi7M0EA7qgdXGja2SLLc6vtsQ1Wd2RqqxOuFnchw9/kZubdrxy38J8iI36AEwb0Qucb1uLTuwFhl7Qw==
+projen@^0.80.20:
+  version "0.80.20"
+  resolved "https://registry.yarnpkg.com/projen/-/projen-0.80.20.tgz#ad4af6c42d1eeb1edb6675476425271a67ff0272"
+  integrity sha512-XVQBMdBilS/x0KmFyUH3xBIE3ZDXInAErPIAg56dGYQ0epl21kbuCYvsWdPwPQ8wdNi+D/gQUEaf/uenidH5kg==
   dependencies:
     "@iarna/toml" "^2.2.5"
     case "^1.6.3"
@@ -6195,16 +6195,16 @@ projen@^0.78.13:
     fast-json-patch "^3.1.1"
     glob "^8"
     ini "^2.0.0"
-    semver "^7.5.4"
+    semver "^7.6.0"
     shx "^0.3.4"
     xmlbuilder2 "^3.1.1"
     yaml "^2.2.2"
     yargs "^17.7.2"
 
-projen@^0.80.4:
-  version "0.80.15"
-  resolved "https://registry.yarnpkg.com/projen/-/projen-0.80.15.tgz#e30cb9dfcb10cef843ba6a43bb4f2635913caed4"
-  integrity sha512-wOKRoC7s6Gt7EObOW7Rn/CgeJF3yicjbIt3Hb+dkol+DhppGMAd+SkViTF2X/f3l8WjI/cZR0aAtu3DJyyZrUA==
+projen@^0.81.2:
+  version "0.81.5"
+  resolved "https://registry.yarnpkg.com/projen/-/projen-0.81.5.tgz#991f6ab2c8a7dcdf2f7ff027ec120dc470eb2a2b"
+  integrity sha512-INiusfzl31lnBkSxrwgsZ5gEgoIE8WufZ2ihDjYzn0BqJcWuFhLX+ayi0vZ9HS7mjyUx3KSy2gTLznt2t+OgpQ==
   dependencies:
     "@iarna/toml" "^2.2.5"
     case "^1.6.3"
@@ -7424,9 +7424,9 @@ yaml@1.10.2:
   integrity sha512-r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==
 
 yaml@^2.2.2:
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/yaml/-/yaml-2.4.1.tgz#2e57e0b5e995292c25c75d2658f0664765210eed"
-  integrity sha512-pIXzoImaqmfOrL7teGUBt/T7ZDnyeGBWyXQBvOVhLkWLN37GXv8NMLK406UY6dS51JfcQHsmcW5cJ441bHg6Lg==
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/yaml/-/yaml-2.4.2.tgz#7a2b30f2243a5fc299e1f14ca58d475ed4bc5362"
+  integrity sha512-B3VqDZ+JAg1nZpaEmWtTXUlBneoGx6CPM9b0TENK6aoSu5t73dItudwdgmi6tHlIZZId4dZ9skcAQ2UbcyAeVA==
 
 yargs-parser@^20.2.2, yargs-parser@^20.2.3:
   version "20.2.9"
