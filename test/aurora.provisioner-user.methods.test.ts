@@ -1,17 +1,15 @@
-import AWSMock from 'aws-sdk-mock';
+import { GetSecretValueCommand, PutSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
+import { mockClient } from 'aws-sdk-client-mock';
 import { Client } from 'pg';
 import sinon from 'sinon';
 
 import { Methods } from '../src/aurora.provision-user';
 
+const secretsManagerMock = mockClient(SecretsManagerClient);
 sinon.stub(console, 'log');
 
 describe('fetchAndConformSecrets', () => {
   const m = new Methods();
-  const getSecretValueStub = sinon.stub();
-  AWSMock.mock('SecretsManager', 'getSecretValue', getSecretValueStub);
-  const putSecretValueStub = sinon.stub();
-  AWSMock.mock('SecretsManager', 'putSecretValue', putSecretValueStub);
 
   const standardResult = {
     clientConfig: {
@@ -24,11 +22,12 @@ describe('fetchAndConformSecrets', () => {
     password: 'userPassword',
   };
 
-  beforeEach(() => {
-    getSecretValueStub.resetHistory();
-    putSecretValueStub.resetHistory();
-    // managerSecret
-    getSecretValueStub.onFirstCall().resolves({
+  afterEach(() => {
+    secretsManagerMock.reset();
+  });
+
+  function secretsManagerMockWithManagerSecret() {
+    return secretsManagerMock.on(GetSecretValueCommand).resolvesOnce({
       SecretString: JSON.stringify({
         engine: 'managerEngine',
         host: 'managerHost',
@@ -37,22 +36,23 @@ describe('fetchAndConformSecrets', () => {
         username: 'managerUsername',
       }),
     });
-  });
+  }
 
   describe('without proxy', () => {
     it('updates user secret when missing engine', async () => {
-      getSecretValueStub.onSecondCall().resolves({
+      secretsManagerMockWithManagerSecret().resolvesOnce({
         SecretString: JSON.stringify({
           password: 'userPassword',
           username: 'userUsername',
           host: 'userHost',
         }),
       });
-      putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+      secretsManagerMock.on(PutSecretValueCommand).resolvesOnce({});
       const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
       expect(r).toEqual(standardResult);
-      expect(putSecretValueStub.callCount).toEqual(1);
-      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      expect(secretsManagerMock.calls().length).toEqual(3);
+      const putCall = secretsManagerMock.calls()[2];
+      expect(putCall.args[0].input).toEqual({
         SecretId: 'fakeUserSecretArn',
         SecretString: JSON.stringify({
           password: 'userPassword',
@@ -64,7 +64,7 @@ describe('fetchAndConformSecrets', () => {
     });
 
     it('updates user secret when empty engine', async () => {
-      getSecretValueStub.onSecondCall().resolves({
+      secretsManagerMockWithManagerSecret().resolvesOnce({
         SecretString: JSON.stringify({
           password: 'userPassword',
           username: 'userUsername',
@@ -72,11 +72,12 @@ describe('fetchAndConformSecrets', () => {
           engine: '',
         }),
       });
-      putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+      secretsManagerMock.on(PutSecretValueCommand).resolvesOnce({});
       const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
       expect(r).toEqual(standardResult);
-      expect(putSecretValueStub.callCount).toEqual(1);
-      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      expect(secretsManagerMock.calls().length).toEqual(3);
+      const putCall = secretsManagerMock.calls()[2];
+      expect(putCall.args[0].input).toEqual({
         SecretId: 'fakeUserSecretArn',
         SecretString: JSON.stringify({
           password: 'userPassword',
@@ -88,18 +89,19 @@ describe('fetchAndConformSecrets', () => {
     });
 
     it('updates user secret when missing host', async () => {
-      getSecretValueStub.onSecondCall().resolves({
+      secretsManagerMockWithManagerSecret().resolvesOnce({
         SecretString: JSON.stringify({
           password: 'userPassword',
           username: 'userUsername',
           engine: 'userEngine',
         }),
       });
-      putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+      secretsManagerMock.on(PutSecretValueCommand).resolvesOnce({});
       const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
       expect(r).toEqual(standardResult);
-      expect(putSecretValueStub.callCount).toEqual(1);
-      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      expect(secretsManagerMock.calls().length).toEqual(3);
+      const putCall = secretsManagerMock.calls()[2];
+      expect(putCall.args[0].input).toEqual({
         SecretId: 'fakeUserSecretArn',
         SecretString: JSON.stringify({
           password: 'userPassword',
@@ -111,7 +113,7 @@ describe('fetchAndConformSecrets', () => {
     });
 
     it('updates user secret when empty host', async () => {
-      getSecretValueStub.onSecondCall().resolves({
+      secretsManagerMockWithManagerSecret().resolvesOnce({
         SecretString: JSON.stringify({
           password: 'userPassword',
           username: 'userUsername',
@@ -119,11 +121,12 @@ describe('fetchAndConformSecrets', () => {
           host: '',
         }),
       });
-      putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+      secretsManagerMock.on(PutSecretValueCommand).resolvesOnce({});
       const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
       expect(r).toEqual(standardResult);
-      expect(putSecretValueStub.callCount).toEqual(1);
-      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      expect(secretsManagerMock.calls().length).toEqual(3);
+      const putCall = secretsManagerMock.calls()[2];
+      expect(putCall.args[0].input).toEqual({
         SecretId: 'fakeUserSecretArn',
         SecretString: JSON.stringify({
           password: 'userPassword',
@@ -135,17 +138,18 @@ describe('fetchAndConformSecrets', () => {
     });
 
     it('updates user secret when missing both engine and host', async () => {
-      getSecretValueStub.onSecondCall().resolves({
+      secretsManagerMockWithManagerSecret().resolvesOnce({
         SecretString: JSON.stringify({
           password: 'userPassword',
           username: 'userUsername',
         }),
       });
-      putSecretValueStub.onFirstCall().resolves({ $response: { error: undefined } });
+      secretsManagerMock.on(PutSecretValueCommand).resolvesOnce({});
       const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
       expect(r).toEqual(standardResult);
-      expect(putSecretValueStub.callCount).toEqual(1);
-      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      expect(secretsManagerMock.calls().length).toEqual(3);
+      const putCall = secretsManagerMock.calls()[2];
+      expect(putCall.args[0].input).toEqual({
         SecretId: 'fakeUserSecretArn',
         SecretString: JSON.stringify({
           password: 'userPassword',
@@ -157,7 +161,7 @@ describe('fetchAndConformSecrets', () => {
     });
 
     it('does not update user secret when both host and engine are already set', async () => {
-      getSecretValueStub.onSecondCall().resolves({
+      secretsManagerMockWithManagerSecret().resolvesOnce({
         SecretString: JSON.stringify({
           password: 'userPassword',
           username: 'userUsername',
@@ -167,13 +171,13 @@ describe('fetchAndConformSecrets', () => {
       });
       const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn');
       expect(r).toEqual(standardResult);
-      expect(putSecretValueStub.notCalled).toBe(true);
+      expect(secretsManagerMock.calls().length).toEqual(2);
     });
   });
 
   describe('with proxy', () => {
     it('updates user secret to remove proxyHost if no proxyHost', async () => {
-      getSecretValueStub.onSecondCall().resolves({
+      secretsManagerMockWithManagerSecret().resolvesOnce({
         SecretString: JSON.stringify({
           password: 'userPassword',
           username: 'userUsername',
@@ -182,13 +186,14 @@ describe('fetchAndConformSecrets', () => {
           proxyHost: 'shouldNotBeHere',
         }),
       });
+      secretsManagerMock.on(PutSecretValueCommand).resolvesOnce({});
       const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn');
       expect(r).toEqual(standardResult);
-      expect(putSecretValueStub.callCount).toEqual(1);
+      expect(secretsManagerMock.calls().length).toEqual(3);
     });
 
     it('updates user secret when missing proxy', async () => {
-      getSecretValueStub.onSecondCall().resolves({
+      secretsManagerMockWithManagerSecret().resolvesOnce({
         SecretString: JSON.stringify({
           password: 'userPassword',
           username: 'userUsername',
@@ -196,10 +201,12 @@ describe('fetchAndConformSecrets', () => {
           host: 'userHost',
         }),
       });
+      secretsManagerMock.on(PutSecretValueCommand).resolvesOnce({});
       const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn', 'fakeProxyHost');
       expect(r).toEqual(standardResult);
-      expect(putSecretValueStub.callCount).toEqual(1);
-      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      expect(secretsManagerMock.calls().length).toEqual(3);
+      const putCall = secretsManagerMock.calls()[2];
+      expect(putCall.args[0].input).toEqual({
         SecretId: 'fakeUserSecretArn',
         SecretString:
           '{"password":"userPassword","username":"userUsername","engine":"userEngine","host":"userHost","proxyHost":"fakeProxyHost"}',
@@ -207,7 +214,7 @@ describe('fetchAndConformSecrets', () => {
     });
 
     it('updates user secret when proxy changed', async () => {
-      getSecretValueStub.onSecondCall().resolves({
+      secretsManagerMockWithManagerSecret().resolvesOnce({
         SecretString: JSON.stringify({
           password: 'userPassword',
           username: 'userUsername',
@@ -216,10 +223,12 @@ describe('fetchAndConformSecrets', () => {
           proxyHost: 'oldProxyHost',
         }),
       });
+      secretsManagerMock.on(PutSecretValueCommand).resolvesOnce({});
       const r = await m.fetchAndConformSecrets('fakeManagerSecredArn', 'fakeUserSecretArn', 'fakeProxyHost');
       expect(r).toEqual(standardResult);
-      expect(putSecretValueStub.callCount).toEqual(1);
-      expect(putSecretValueStub.firstCall.args[0]).toEqual({
+      expect(secretsManagerMock.calls().length).toEqual(3);
+      const putCall = secretsManagerMock.calls()[2];
+      expect(putCall.args[0].input).toEqual({
         SecretId: 'fakeUserSecretArn',
         SecretString:
           '{"password":"userPassword","username":"userUsername","engine":"userEngine","host":"userHost","proxyHost":"fakeProxyHost"}',
@@ -228,18 +237,19 @@ describe('fetchAndConformSecrets', () => {
   });
 
   it('passes through errors on put', async () => {
-    getSecretValueStub.onSecondCall().resolves({
+    secretsManagerMockWithManagerSecret().resolvesOnce({
       SecretString: JSON.stringify({
         password: 'userPassword',
         username: 'userUsername',
       }),
     });
-    putSecretValueStub.onFirstCall().resolves({ $response: { error: new Error('whoopsie') } });
+    secretsManagerMock.on(PutSecretValueCommand).rejectsOnce(new Error('whoopsie'));
     await expect(m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn')).rejects.toThrowError(
       'whoopsie',
     );
-    expect(putSecretValueStub.callCount).toEqual(1);
-    expect(putSecretValueStub.firstCall.args[0]).toEqual({
+    expect(secretsManagerMock.calls().length).toEqual(3);
+    const putCall = secretsManagerMock.calls()[2];
+    expect(putCall.args[0].input).toEqual({
       SecretId: 'fakeUserSecretArn',
       SecretString: JSON.stringify({
         password: 'userPassword',

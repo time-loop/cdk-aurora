@@ -1,24 +1,23 @@
-import { Callback, CloudFormationCustomResourceEventCommon, Context } from 'aws-lambda';
-import AWSMock from 'aws-sdk-mock';
+import { RDSClient, DescribeDBClustersCommand } from '@aws-sdk/client-rds';
+import { mockClient } from 'aws-sdk-client-mock';
 import sinon from 'sinon';
 
 import { CfnRequestType, IsComplete, IsCompleteEvent } from '../src/aurora.activity-stream';
 
-const describeDBClustersStub = sinon.stub();
-AWSMock.mock('RDS', 'describeDBClusters', describeDBClustersStub);
+const rdsMock = mockClient(RDSClient);
 
 sinon.stub(console, 'log');
 sinon.stub(console, 'error');
 
 beforeEach(() => {
-  describeDBClustersStub.reset();
+  rdsMock.reset();
 });
 
 const resourcePropertiesBase = {
   ServiceToken: 'fakeServiceToken',
 };
 
-const eventBase: CloudFormationCustomResourceEventCommon = {
+const eventBase = {
   LogicalResourceId: 'fakeLogicalResourceId',
   RequestId: 'fakeRequestId',
   ResourceType: 'Custom::RdsUser',
@@ -28,7 +27,7 @@ const eventBase: CloudFormationCustomResourceEventCommon = {
   StackId: 'fakeStackId',
 };
 
-const context: Context = {
+const context = {
   awsRequestId: 'fakeAwsRequestId',
   callbackWaitsForEmptyEventLoop: true,
   done: sinon.stub(),
@@ -43,7 +42,7 @@ const context: Context = {
   succeed: () => {},
 };
 
-const callback: Callback = (_err, _data) => {};
+const callback = (_err: any, _data: any) => {};
 
 describe('update', () => {
   const isCompleteEvent: IsCompleteEvent = {
@@ -55,7 +54,7 @@ describe('update', () => {
   it('completes', async () => {
     const r = await IsComplete(isCompleteEvent, context, callback);
     expect(r.IsComplete).toEqual(true);
-    expect(describeDBClustersStub.callCount).toEqual(0);
+    expect(rdsMock.calls().length).toEqual(0);
   });
 });
 
@@ -68,29 +67,29 @@ describe('create', () => {
 
   // Not sure how to get this working. But... it covers a really small niche.
   // it('passes through when describeDBClusters fails', async () => {
-  //   describeDBClustersStub.rejects(new Error('fakeError'));
+  //   rdsMock.on(DescribeDBClustersCommand).rejects(new Error('fakeError'));
   //   await expect(IsComplete(isCompleteEvent, context, callback)).rejects;
-  //   expect(describeDBClustersStub.callCount).toEqual(1);
+  //   expect(rdsMock.calls().length).toEqual(1);
   // });
 
   it('completes when no cluster found', async () => {
-    describeDBClustersStub.resolves({
+    rdsMock.on(DescribeDBClustersCommand).resolves({
       DBClusters: [],
     });
     const r = await IsComplete(isCompleteEvent, context, callback);
     expect(r.IsComplete).toEqual(true);
-    expect(describeDBClustersStub.callCount).toEqual(1);
+    expect(rdsMock.calls().length).toEqual(1);
   });
 
   it('completes when no dbclusters returned', async () => {
-    describeDBClustersStub.resolves({});
+    rdsMock.on(DescribeDBClustersCommand).resolves({});
     const r = await IsComplete(isCompleteEvent, context, callback);
     expect(r.IsComplete).toEqual(true);
-    expect(describeDBClustersStub.callCount).toEqual(1);
+    expect(rdsMock.calls().length).toEqual(1);
   });
 
   it('completes when cluster found and started', async () => {
-    describeDBClustersStub.resolves({
+    rdsMock.on(DescribeDBClustersCommand).resolves({
       DBClusters: [
         {
           ActivityStreamStatus: 'started',
@@ -99,11 +98,11 @@ describe('create', () => {
     });
     const r = await IsComplete(isCompleteEvent, context, callback);
     expect(r.IsComplete).toEqual(true);
-    expect(describeDBClustersStub.callCount).toEqual(1);
+    expect(rdsMock.calls().length).toEqual(1);
   });
 
   it('not completes when cluster found and not started', async () => {
-    describeDBClustersStub.resolves({
+    rdsMock.on(DescribeDBClustersCommand).resolves({
       DBClusters: [
         {
           ActivityStreamStatus: 'starting',
@@ -112,7 +111,7 @@ describe('create', () => {
     });
     const r = await IsComplete(isCompleteEvent, context, callback);
     expect(r.IsComplete).toEqual(false);
-    expect(describeDBClustersStub.callCount).toEqual(1);
+    expect(rdsMock.calls().length).toEqual(1);
   });
 });
 
@@ -124,16 +123,16 @@ describe('delete', () => {
   };
 
   it('completes when no cluster found', async () => {
-    describeDBClustersStub.resolves({
+    rdsMock.on(DescribeDBClustersCommand).resolves({
       DBClusters: [],
     });
     const r = await IsComplete(isCompleteEvent, context, callback);
     expect(r.IsComplete).toEqual(true);
-    expect(describeDBClustersStub.callCount).toEqual(1);
+    expect(rdsMock.calls().length).toEqual(1);
   });
 
   it('completes when cluster found and stopped', async () => {
-    describeDBClustersStub.resolves({
+    rdsMock.on(DescribeDBClustersCommand).resolves({
       DBClusters: [
         {
           ActivityStreamStatus: 'stopped',
@@ -142,11 +141,11 @@ describe('delete', () => {
     });
     const r = await IsComplete(isCompleteEvent, context, callback);
     expect(r.IsComplete).toEqual(true);
-    expect(describeDBClustersStub.callCount).toEqual(1);
+    expect(rdsMock.calls().length).toEqual(1);
   });
 
   it('not completes when cluster found and not stopped', async () => {
-    describeDBClustersStub.resolves({
+    rdsMock.on(DescribeDBClustersCommand).resolves({
       DBClusters: [
         {
           ActivityStreamStatus: 'stopping',
@@ -155,6 +154,6 @@ describe('delete', () => {
     });
     const r = await IsComplete(isCompleteEvent, context, callback);
     expect(r.IsComplete).toEqual(false);
-    expect(describeDBClustersStub.callCount).toEqual(1);
+    expect(rdsMock.calls().length).toEqual(1);
   });
 });

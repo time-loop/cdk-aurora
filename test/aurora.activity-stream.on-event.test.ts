@@ -1,11 +1,3 @@
-import {
-  Callback,
-  CloudFormationCustomResourceCreateEvent,
-  CloudFormationCustomResourceDeleteEvent,
-  CloudFormationCustomResourceEventCommon,
-  CloudFormationCustomResourceUpdateEvent,
-  Context,
-} from 'aws-lambda';
 import sinon from 'sinon';
 
 import { Methods, OnEvent } from '../src/aurora.activity-stream';
@@ -22,7 +14,7 @@ const resourcePropertiesBase = {
   kmsKeyId: 'fakeKmsKeyId',
 };
 
-const eventBase: CloudFormationCustomResourceEventCommon = {
+const eventBase = {
   LogicalResourceId: 'fakeLogicalResourceId',
   RequestId: 'fakeRequestId',
   ResourceType: 'Custom::RdsUser',
@@ -32,7 +24,7 @@ const eventBase: CloudFormationCustomResourceEventCommon = {
   StackId: 'fakeStackId',
 };
 
-const context: Context = {
+const context = {
   awsRequestId: 'fakeAwsRequestId',
   callbackWaitsForEmptyEventLoop: true,
   done: sinon.stub(),
@@ -47,7 +39,7 @@ const context: Context = {
   succeed: () => {},
 };
 
-const callback: Callback = (_err, _data) => {};
+const callback = (_err: any, _data: any) => {};
 
 const resultBase = {
   LogicalResourceId: 'fakeLogicalResourceId',
@@ -59,7 +51,7 @@ const resultBase = {
 };
 
 describe('create', () => {
-  const createEvent: CloudFormationCustomResourceCreateEvent = {
+  const createEvent = {
     ...eventBase,
     RequestType: 'Create',
     ResourceProperties: {
@@ -91,7 +83,7 @@ describe('create', () => {
 });
 
 describe('update', () => {
-  const updateEvent: CloudFormationCustomResourceUpdateEvent = {
+  const updateEvent = {
     ...eventBase,
     OldResourceProperties: {},
     PhysicalResourceId: 'fakePhysicalResourceId',
@@ -124,7 +116,7 @@ describe('update', () => {
 });
 
 describe('delete', () => {
-  const deleteEvent: CloudFormationCustomResourceDeleteEvent = {
+  const deleteEvent = {
     ...eventBase,
     PhysicalResourceId: 'fakePhysicalResourceId',
     RequestType: 'Delete',

@@ -1,11 +1,11 @@
-import * as awsLambda from 'aws-lambda';
-import * as _awsSdk from 'aws-sdk';
-import * as awsXray from 'aws-xray-sdk-core';
+import { SecretsManagerClient, GetSecretValueCommand, PutSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import { captureAWSv3Client } from 'aws-xray-sdk-core';
 import { Client, ClientConfig } from 'pg';
 /* eslint-disable @typescript-eslint/no-require-imports */
 import format = require('pg-format');
 /* eslint-enable @typescript-eslint/no-require-imports */
-const awsSdk = awsXray.captureAWS(_awsSdk);
+
+const secretsManagerClient = captureAWSv3Client(new SecretsManagerClient({}));
 
 export interface RdsUserProvisionerProps {
   /**
@@ -84,19 +84,15 @@ enum CfnRequestType {
   DELETE = 'Delete',
 }
 
-export async function handler(
-  event: awsLambda.CloudFormationCustomResourceEvent,
-  context: awsLambda.Context,
-  callback: awsLambda.Callback,
-): Promise<awsLambda.CloudFormationCustomResourceResponse> {
+export async function handler(event: any, context: any, callback: any) {
   try {
     switch (event.RequestType) {
       case CfnRequestType.CREATE:
-        return await onCreate(event as awsLambda.CloudFormationCustomResourceCreateEvent, context, callback);
+        return await onCreate(event, context, callback);
       case CfnRequestType.UPDATE:
-        return await onUpdate(event as awsLambda.CloudFormationCustomResourceUpdateEvent, context, callback);
+        return await onUpdate(event, context, callback);
       case CfnRequestType.DELETE:
-        return await onDelete(event as awsLambda.CloudFormationCustomResourceDeleteEvent, context, callback);
+        return await onDelete(event, context, callback);
       default:
         return await Promise.reject(`Unknown event RequestType in event ${event}`);
     }
@@ -113,11 +109,7 @@ export async function handler(
  * @param _callback
  * @returns
  */
-async function onCreate(
-  event: awsLambda.CloudFormationCustomResourceEvent,
-  context: awsLambda.Context,
-  _callback: awsLambda.Callback,
-): Promise<awsLambda.CloudFormationCustomResourceResponse> {
+async function onCreate(event: any, context: any, _callback: any): Promise<any> {
   console.log(`onCreate event: ${JSON.stringify(event)}`);
   return createUpdate({
     ...event,
@@ -136,11 +128,7 @@ async function onCreate(
  * @param _callback
  * @returns
  */
-const onUpdate = async (
-  event: awsLambda.CloudFormationCustomResourceUpdateEvent,
-  context: awsLambda.Context,
-  _callback: awsLambda.Callback,
-): Promise<awsLambda.CloudFormationCustomResourceResponse> => {
+async function onUpdate(event: any, context: any, _callback: any): Promise<any> {
   console.log(`onUpdate event: ${JSON.stringify(event)}`);
   return createUpdate({
     ...event,
@@ -149,7 +137,7 @@ const onUpdate = async (
     isWriter: event.ResourceProperties.isWriter === 'true',
     proxyHost: event.ResourceProperties.proxyHost,
   });
-};
+}
 
 /**
  * Currently a no-op... but we could actually remove the user. Do we want to?
@@ -158,11 +146,7 @@ const onUpdate = async (
  * @param _callback
  * @returns
  */
-const onDelete = async (
-  event: awsLambda.CloudFormationCustomResourceDeleteEvent,
-  context: awsLambda.Context,
-  _callback: awsLambda.Callback,
-): Promise<awsLambda.CloudFormationCustomResourceResponse> => {
+async function onDelete(event: any, context: any, _callback: any): Promise<any> {
   console.log(`onDelete event: ${JSON.stringify(event)}`);
   return {
     LogicalResourceId: event.LogicalResourceId,
@@ -172,7 +156,7 @@ const onDelete = async (
     StackId: event.StackId,
     Status: CfnStatus.SUCCESS,
   };
-};
+}
 
 /**
  * Conform user secret (if necessary),
@@ -183,8 +167,8 @@ const onDelete = async (
  * @param props
  * @returns
  */
-export async function createUpdate(props: CreateUpdateProps): Promise<awsLambda.CloudFormationCustomResourceResponse> {
-  const resultFactory = (p: ResultProps): awsLambda.CloudFormationCustomResourceResponse => {
+export async function createUpdate(props: CreateUpdateProps): Promise<any> {
+  const resultFactory = (p: ResultProps): any => {
     return {
       LogicalResourceId: props.LogicalResourceId,
       PhysicalResourceId: p.PhysicalResourceId,
@@ -285,14 +269,12 @@ export class Methods {
     userSecretArn: string,
     proxyHost?: string,
   ): Promise<SecretsResult> {
-    const secretsManager = new awsSdk.SecretsManager();
-
     console.log(`Fetching secret ${managerSecretArn}`);
-    const managerSecretRaw = await secretsManager.getSecretValue({ SecretId: managerSecretArn }).promise();
+    const managerSecretRaw = await secretsManagerClient.send(new GetSecretValueCommand({ SecretId: managerSecretArn }));
     const managerSecret = JSON.parse(managerSecretRaw.SecretString!);
 
     console.log(`Fetching secret ${userSecretArn}`);
-    const userSecretRaw = await secretsManager.getSecretValue({ SecretId: userSecretArn }).promise();
+    const userSecretRaw = await secretsManagerClient.send(new GetSecretValueCommand({ SecretId: userSecretArn }));
     const userSecret = JSON.parse(userSecretRaw.SecretString!);
 
     // Pull the host and engine information from the managerSecret and push it into the userSecret.
@@ -347,13 +329,10 @@ export class Methods {
       );
     } else {
       console.log(`Updating user secret for ${JSON.stringify(userSecret.username)}.`);
-      const r = await secretsManager
-        .putSecretValue({ SecretId: userSecretArn, SecretString: JSON.stringify(userSecret) })
-        .promise();
+      const r = await secretsManagerClient.send(
+        new PutSecretValueCommand({ SecretId: userSecretArn, SecretString: JSON.stringify(userSecret) }),
+      );
       console.log(`putSecretValue ${userSecretArn} response: ${JSON.stringify(r)}`);
-      if (r.$response.error) {
-        throw r.$response.error;
-      }
     }
 
     return {

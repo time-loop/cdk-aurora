@@ -5,10 +5,6 @@
       "type": "build"
     },
     {
-      "name": "@types/aws-lambda",
-      "type": "build"
-    },
-    {
       "name": "@types/jest",
       "type": "build"
     },
@@ -40,7 +36,7 @@
       "type": "build"
     },
     {
-      "name": "aws-sdk-mock",
+      "name": "aws-sdk-client-mock",
       "type": "build"
     },
     {
@@ -139,12 +135,11 @@
       "type": "build"
     },
     {
-      "name": "aws-lambda",
+      "name": "@aws-sdk/client-rds",
       "type": "bundled"
     },
     {
-      "name": "aws-sdk",
-      "version": "2.1333.0",
+      "name": "@aws-sdk/client-secrets-manager",
       "type": "bundled"
     },
     {
@@ -161,7 +156,7 @@
     },
     {
       "name": "aws-cdk-lib",
-      "version": "^2.94.0",
+      "version": "^2.140.0",
       "type": "peer"
     },
     {
@@ -175,12 +170,11 @@
       "type": "peer"
     },
     {
-      "name": "aws-lambda",
+      "name": "@aws-sdk/client-rds",
       "type": "runtime"
     },
     {
-      "name": "aws-sdk",
-      "version": "2.1333.0",
+      "name": "@aws-sdk/client-secrets-manager",
       "type": "runtime"
     },
     {

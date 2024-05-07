@@ -1,4 +1,5 @@
-import AWSMock from 'aws-sdk-mock';
+import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
+import { mockClient } from 'aws-sdk-client-mock';
 import { Client, ClientConfig } from 'pg';
 import sinon from 'sinon';
 
@@ -12,8 +13,7 @@ sinon.stub(console, 'log');
 
 describe('fetchSecret', () => {
   const m = new Methods();
-  const getSecretValueStub = sinon.stub();
-  AWSMock.mock('SecretsManager', 'getSecretValue', getSecretValueStub);
+  const secretsMangerMock = mockClient(SecretsManagerClient);
 
   const standardResult = {
     host: 'managerHost',
@@ -22,9 +22,12 @@ describe('fetchSecret', () => {
     password: 'managerPassword',
   };
 
+  afterEach(() => {
+    secretsMangerMock.reset();
+  });
+
   beforeEach(() => {
-    getSecretValueStub.reset();
-    getSecretValueStub.resolves({
+    secretsMangerMock.on(GetSecretValueCommand).resolvesOnce({
       SecretString: JSON.stringify({
         engine: 'managerEngine',
         host: 'managerHost',
@@ -38,8 +41,8 @@ describe('fetchSecret', () => {
   it('succeeds', async () => {
     const r = await m.fetchSecret('fakeManagerSecretArn');
     expect(r).toEqual(standardResult);
-    expect(getSecretValueStub.callCount).toEqual(1);
-    expect(getSecretValueStub.firstCall.args[0]).toEqual({ SecretId: 'fakeManagerSecretArn' });
+    expect(secretsMangerMock.calls().length).toEqual(1);
+    expect(secretsMangerMock.calls()[0].args[0].input).toEqual({ SecretId: 'fakeManagerSecretArn' });
   });
 });
 

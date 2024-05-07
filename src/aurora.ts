@@ -379,9 +379,9 @@ export class Aurora extends Construct {
     if (props.activityStream) {
       function activityStreamHandler(handler: string): aws_lambda_nodejs.NodejsFunction {
         const fn = new aws_lambda_nodejs.NodejsFunction(myConstruct, `ActivityStream${handler}`, {
+          runtime: aws_lambda.Runtime.NODEJS_LATEST,
           bundling: {
-            externalModules: ['aws-lambda'], // Lambda is just types
-            minify: true,
+            externalModules: ['@aws-sdk/client-secrets-manager', '@aws-sdk/client-rds'],
           },
           entry: join(__dirname, 'aurora.activity-stream.ts'),
           handler,
@@ -433,9 +433,9 @@ export class Aurora extends Construct {
     }
 
     const provisionerProps: aws_lambda_nodejs.NodejsFunctionProps = {
+      runtime: aws_lambda.Runtime.NODEJS_LATEST,
       bundling: {
-        externalModules: ['aws-lambda'], // Lambda is just types
-        minify: true,
+        externalModules: ['@aws-sdk/client-secrets-manager', '@aws-sdk/client-rds'],
         nodeModules: ['pg', 'pg-format'],
       },
       environment: {
