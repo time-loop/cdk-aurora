@@ -41,12 +41,12 @@ describe('fetchAndConformSecrets', () => {
   describe('without proxy', () => {
     it('updates user secret when missing engine', async () => {
       secretsManagerMockWithManagerSecret().resolvesOnce({
-          SecretString: JSON.stringify({
-            password: 'userPassword',
-            username: 'userUsername',
-            host: 'userHost',
-          }),
-        });
+        SecretString: JSON.stringify({
+          password: 'userPassword',
+          username: 'userUsername',
+          host: 'userHost',
+        }),
+      });
       secretsManagerMock.on(PutSecretValueCommand).resolvesOnce({});
       const r = await m.fetchAndConformSecrets('fakeManagerSecretArn', 'fakeUserSecretArn');
       expect(r).toEqual(standardResult);

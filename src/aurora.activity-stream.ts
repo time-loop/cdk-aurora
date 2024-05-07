@@ -36,13 +36,13 @@ export enum CfnRequestType {
 }
 
 export interface IsCompleteEvent {
-  LogicalResourceId: string,
-  RequestId: string,
-  ResourceType: string,
-  ResponseURL: string,
-  ResourceProperties?: { clusterId?: string, ServiceToken?: string },
-  ServiceToken: string,
-  StackId: string,
+  LogicalResourceId: string;
+  RequestId: string;
+  ResourceType: string;
+  ResponseURL: string;
+  ResourceProperties?: { clusterId?: string; ServiceToken?: string };
+  ServiceToken: string;
+  StackId: string;
 
   PhysicalResourceId: string;
   RequestType: CfnRequestType;
@@ -91,7 +91,7 @@ export class Methods {
    * @param invokedFunctionArn
    * @returns
    */
-  public async onCreate( event: any, logStreamName: string, invokedFunctionArn: string ): Promise<any> {
+  public async onCreate(event: any, logStreamName: string, invokedFunctionArn: string): Promise<any> {
     const resultFactory = (props: CreateResultProps): any => {
       return {
         ...props,
@@ -146,7 +146,7 @@ export class Methods {
    * @param logStreamName
    * @returns
    */
-  public async onUpdate( event: any, logStreamName: string ): Promise<any> {
+  public async onUpdate(event: any, logStreamName: string): Promise<any> {
     return {
       LogicalResourceId: event.LogicalResourceId,
       PhysicalResourceId: event.PhysicalResourceId,
@@ -164,7 +164,7 @@ export class Methods {
    * @param logStreamName
    * @returns
    */
-  public async onDelete( event: any, logStreamName: string ): Promise<any> {
+  public async onDelete(event: any, logStreamName: string): Promise<any> {
     const resultFactory = (props?: DeleteResultProps) => {
       return {
         Data: props?.Data,
@@ -195,17 +195,13 @@ export class Methods {
   }
 }
 
-export const OnEvent = (
-  event: any,
-  context: any,
-  _callback?: any,
-): Promise<any> => {
+export const OnEvent = (event: any, context: any, _callback?: any): Promise<any> => {
   console.log(`onEvent event: ${JSON.stringify(event)}`);
   const m = new Methods();
   try {
     switch (event.RequestType) {
       case CfnRequestType.CREATE:
-        return m.onCreate( event, context.logStreamName, context.invokedFunctionArn );
+        return m.onCreate(event, context.logStreamName, context.invokedFunctionArn);
       case CfnRequestType.UPDATE:
         return m.onUpdate(event, context.logStreamName);
       case CfnRequestType.DELETE:
@@ -219,11 +215,7 @@ export const OnEvent = (
   }
 };
 
-export async function IsComplete(
-  event: IsCompleteEvent,
-  _context?: any,
-  _callback?: any,
-): Promise<IsCompleteResult> {
+export async function IsComplete(event: IsCompleteEvent, _context?: any, _callback?: any): Promise<IsCompleteResult> {
   console.log(`isComplete event: ${JSON.stringify(event)}`);
 
   if (event.RequestType == CfnRequestType.UPDATE) {
@@ -255,4 +247,4 @@ export async function IsComplete(
     console.error(err);
     return Promise.reject('Failed');
   }
-};
+}

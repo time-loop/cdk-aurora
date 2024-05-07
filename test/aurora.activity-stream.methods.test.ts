@@ -12,7 +12,7 @@ const rdsMock = mockClient(RDSClient);
 
 beforeEach(() => {
   getClusterArnStub.reset();
-  rdsMock.reset()
+  rdsMock.reset();
 });
 
 const resourcePropertiesBase = {

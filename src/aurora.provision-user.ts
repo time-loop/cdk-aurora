@@ -1,10 +1,9 @@
 import { SecretsManagerClient, GetSecretValueCommand, PutSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import { captureAWSv3Client } from 'aws-xray-sdk-core';
 import { Client, ClientConfig } from 'pg';
 /* eslint-disable @typescript-eslint/no-require-imports */
 import format = require('pg-format');
 /* eslint-enable @typescript-eslint/no-require-imports */
-
-import { captureAWSv3Client } from 'aws-xray-sdk-core';
 
 const secretsManagerClient = captureAWSv3Client(new SecretsManagerClient({}));
 
@@ -85,7 +84,7 @@ enum CfnRequestType {
   DELETE = 'Delete',
 }
 
-export async function handler( event: any, context: any, callback: any ) {
+export async function handler(event: any, context: any, callback: any) {
   try {
     switch (event.RequestType) {
       case CfnRequestType.CREATE:
@@ -129,7 +128,7 @@ async function onCreate(event: any, context: any, _callback: any): Promise<any> 
  * @param _callback
  * @returns
  */
-async function onUpdate( event: any, context: any, _callback: any ): Promise<any> {
+async function onUpdate(event: any, context: any, _callback: any): Promise<any> {
   console.log(`onUpdate event: ${JSON.stringify(event)}`);
   return createUpdate({
     ...event,
@@ -138,7 +137,7 @@ async function onUpdate( event: any, context: any, _callback: any ): Promise<any
     isWriter: event.ResourceProperties.isWriter === 'true',
     proxyHost: event.ResourceProperties.proxyHost,
   });
-};
+}
 
 /**
  * Currently a no-op... but we could actually remove the user. Do we want to?
@@ -147,7 +146,7 @@ async function onUpdate( event: any, context: any, _callback: any ): Promise<any
  * @param _callback
  * @returns
  */
-async function onDelete( event: any, context: any, _callback: any ): Promise<any> {
+async function onDelete(event: any, context: any, _callback: any): Promise<any> {
   console.log(`onDelete event: ${JSON.stringify(event)}`);
   return {
     LogicalResourceId: event.LogicalResourceId,
@@ -157,7 +156,7 @@ async function onDelete( event: any, context: any, _callback: any ): Promise<any
     StackId: event.StackId,
     Status: CfnStatus.SUCCESS,
   };
-};
+}
 
 /**
  * Conform user secret (if necessary),
