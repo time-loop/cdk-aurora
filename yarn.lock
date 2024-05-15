@@ -2196,14 +2196,14 @@
     "@smithy/types" "^3.0.0"
     tslib "^2.6.2"
 
-"@time-loop/clickup-projen@^1.8.1":
-  version "1.8.1"
-  resolved "https://npm.pkg.github.com/download/@time-loop/clickup-projen/1.8.1/ca0183d4b3a8ba5a4166d15fc1204b8565d62dc5#ca0183d4b3a8ba5a4166d15fc1204b8565d62dc5"
-  integrity sha512-AJJa9s0MfdSyIFXfPiX2wgNS0IkyO4fVsQPiIkB5nytjcyEcBYBBFyBIxrikJyAs1D/FmRlteFkWFYWqPBrUXA==
+"@time-loop/clickup-projen@^1.10.7":
+  version "1.10.7"
+  resolved "https://npm.pkg.github.com/download/@time-loop/clickup-projen/1.10.7/9489f860160bebefe45e79bf2f35346f9c76d3b7#9489f860160bebefe45e79bf2f35346f9c76d3b7"
+  integrity sha512-yCxRK1qKCdkGkEdVcEGaPfXjBCiklN1sg+m5a49BJWz5otbjiPzSAE3pO1048HVlAOZwj8L7DEG27QZAwEnYgw==
   dependencies:
     cson-parser "^4.0.9"
-    projen "^0.81.2"
-    semver "^7.6.0"
+    projen "^0.81.8"
+    semver "^7.6.2"
     ts-deepmerge "^6.2.1"
 
 "@tsconfig/node10@^1.0.7":
@@ -6263,10 +6263,10 @@ process-nextick-args@~2.0.0:
   resolved "https://registry.yarnpkg.com/process-nextick-args/-/process-nextick-args-2.0.1.tgz#7820d9b16120cc55ca9ae7792680ae7dba6d7fe2"
   integrity sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==
 
-projen@^0.81.2:
-  version "0.81.5"
-  resolved "https://registry.yarnpkg.com/projen/-/projen-0.81.5.tgz#991f6ab2c8a7dcdf2f7ff027ec120dc470eb2a2b"
-  integrity sha512-INiusfzl31lnBkSxrwgsZ5gEgoIE8WufZ2ihDjYzn0BqJcWuFhLX+ayi0vZ9HS7mjyUx3KSy2gTLznt2t+OgpQ==
+projen@^0.81.13, projen@^0.81.8:
+  version "0.81.13"
+  resolved "https://registry.yarnpkg.com/projen/-/projen-0.81.13.tgz#ea2cab002a00df46dc324515b4b47571cda2afd9"
+  integrity sha512-gmH+/lvhUitjrCNNvV2ZRmiQ6D4sbGVfOBHND5bsEUm/58b5zz5LUvjj3wn5O3/2dECNMlimaYTBAyNuzV1aCw==
   dependencies:
     "@iarna/toml" "^2.2.5"
     case "^1.6.3"
@@ -6277,27 +6277,7 @@ projen@^0.81.2:
     fast-json-patch "^3.1.1"
     glob "^8"
     ini "^2.0.0"
-    semver "^7.6.0"
-    shx "^0.3.4"
-    xmlbuilder2 "^3.1.1"
-    yaml "^2.2.2"
-    yargs "^17.7.2"
-
-projen@^0.81.7:
-  version "0.81.7"
-  resolved "https://registry.yarnpkg.com/projen/-/projen-0.81.7.tgz#228b8dc055381974658f6e09eab30af7b83f5634"
-  integrity sha512-2l0SdAWSwgAUJURRKg7jPjR8CCVYH1l3wWbdeun2T1Svhk34uiRKiIRV0nseyp9wZrS2egT5lW8eaEB/b7l60g==
-  dependencies:
-    "@iarna/toml" "^2.2.5"
-    case "^1.6.3"
-    chalk "^4.1.2"
-    comment-json "4.2.2"
-    constructs "^10.0.0"
-    conventional-changelog-config-spec "^2.1.0"
-    fast-json-patch "^3.1.1"
-    glob "^8"
-    ini "^2.0.0"
-    semver "^7.6.0"
+    semver "^7.6.2"
     shx "^0.3.4"
     xmlbuilder2 "^3.1.1"
     yaml "^2.2.2"
