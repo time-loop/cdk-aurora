@@ -29,7 +29,7 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.ALL_PACKAGE_READ_TOKEN }}
         run: |-
-          cat > .npmrc <<EOF
+          cat > ~/.npmrc <<EOF
           //npm.pkg.github.com/:_authToken=${NPM_TOKEN}
           @time-loop:registry=https://npm.pkg.github.com/
           EOF
@@ -125,7 +125,7 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.ALL_PACKAGE_READ_TOKEN }}
         run: |-
-          cat > .npmrc <<EOF
+          cat > ~/.npmrc <<EOF
           //npm.pkg.github.com/:_authToken=${NPM_TOKEN}
           @time-loop:registry=https://npm.pkg.github.com/
           EOF
@@ -137,8 +137,8 @@ jobs:
         run: cd .repo && yarn install --check-files --frozen-lockfile
       - name: Create js artifact
         run: cd .repo && npx projen package:js
-      - name: Remove .npmrc file for release
-        run: rm .npmrc
+      - name: Remove ~/.npmrc file for release
+        run: rm ~/.npmrc || true
       - name: Collect js Artifact
         run: mv .repo/dist dist
       - name: Release
