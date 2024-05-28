@@ -63,7 +63,7 @@
     "multi-convention-namer": "0.1.12",
     "prettier": "^3.2.5",
     "projen": "^0.81.13",
-    "sinon": "^17.0.1",
+    "sinon": "^18.0.0",
     "sinon-spy-utils": "^1.0.6",
     "standard-version": "^9",
     "ts-jest": "^29.1.2",
