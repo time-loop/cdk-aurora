@@ -33,7 +33,6 @@ jspm_packages/
 .yarn-integrity
 .cache
 *.code-workspace
-/.npmrc
 .idea
 .yalc
 yalc.lock
@@ -48,6 +47,7 @@ junit.xml
 !/.github/pull_request_template.md
 !/.prettierignore
 !/.prettierrc.json
+!/.npmrc
 !/test/
 !/tsconfig.dev.json
 !/src/

@@ -423,20 +423,22 @@ export class Methods {
   public async configureRole(client: Client, databaseName: string, role: string, schemas: string[]): Promise<void> {
     try {
       const isWriter = role == 'r_writer';
-      [
-        format('GRANT CONNECT ON DATABASE %I TO %I', databaseName, role), // Usage on Database
-        ...schemas.map((s) => format('GRANT USAGE ON SCHEMA %I TO %I', s, role)), // Usage on Schema(s)
-        format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', role), // Defaults on sequences
-        format(
-          'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
-          isWriter ? ', INSERT, UPDATE, DELETE' : '',
-          role,
-        ), // Defaults on tables
-      ].map(async (sql) => {
-        console.log(`Running: ${sql}`);
-        const sqlRes = await client.query(sql);
-        console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
-      });
+      await Promise.all(
+        [
+          format('GRANT CONNECT ON DATABASE %I TO %I', databaseName, role), // Usage on Database
+          ...schemas.map((s) => format('GRANT USAGE ON SCHEMA %I TO %I', s, role)), // Usage on Schema(s)
+          format('ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO %I', role), // Defaults on sequences
+          format(
+            'ALTER DEFAULT PRIVILEGES GRANT SELECT%s ON TABLES TO %I',
+            isWriter ? ', INSERT, UPDATE, DELETE' : '',
+            role,
+          ), // Defaults on tables
+        ].map(async (sql) => {
+          console.log(`Running: ${sql}`);
+          const sqlRes = await client.query(sql);
+          console.log(`Result of ${sql}: rowCount: ${sqlRes.rowCount}, rows: ${JSON.stringify(sqlRes.rows)}`);
+        }),
+      );
     } catch (err) {
       console.log(`Failed creating roles: ${JSON.stringify(err)}`);
       throw err;

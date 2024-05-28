@@ -1,4 +1,5 @@
 import { clickupCdk } from '@time-loop/clickup-projen';
+import { javascript } from 'projen';
 
 const bundledDeps = ['@aws-sdk/client-rds', '@aws-sdk/client-secrets-manager', 'aws-xray-sdk-core', 'pg', 'pg-format'];
 const peerDeps = ['constructs@^10.0.5', 'multi-convention-namer@^0.1.12'];
@@ -9,6 +10,8 @@ const project = new clickupCdk.ClickUpCdkConstructLibrary({
   cdkVersion: '2.140.0', // custom-resources should be able to use latest sdk
   defaultReleaseBranch: 'main',
   licensed: true,
+  packageManager: javascript.NodePackageManager.PNPM,
+  pnpmVersion: '9',
 
   bundledDeps,
   deps: [...bundledDeps],
@@ -28,4 +31,7 @@ const project = new clickupCdk.ClickUpCdkConstructLibrary({
   repositoryUrl: '', // leverage default
   authorAddress: '', // leverage default
 });
+
+project.npmrc.addConfig('node-linker', 'hoisted'); // PNPM support for bundledDeps https://pnpm.io/npmrc#node-linker
+
 project.synth();
