@@ -125,6 +125,43 @@ describe('Aurora', () => {
     it('defaults to no prefix on secret names', () => {
       template.hasResourceProperties('AWS::SecretsManager::Secret', { Name: 'TestManager' });
     });
+    it('ABAC grants the resourcePolicy of the KMS key', () => {
+      const policyStatements = new Capture(Match.arrayWith([]));
+      template.hasResourceProperties('AWS::KMS::Key', {
+        KeyPolicy: {
+          Statement: policyStatements,
+        },
+      });
+      const abacGrant = policyStatements.asArray().find((s) => s.Sid === 'AllowSecretsManagerAccess');
+      expect(abacGrant).toEqual({
+        Sid: 'AllowSecretsManagerAccess',
+        Action: ['kms:Encrypt', 'kms:Decrypt', 'kms:ReEncrypt', 'kms:CreateGrant', 'kms:DescribeKey'],
+        Condition: {
+          StringEquals: {
+            'kms:CallerAccount': {
+              Ref: 'AWS::AccountId',
+            },
+            'kms:ViaService': {
+              'Fn::Join': [
+                '',
+                [
+                  'secretsmanager.',
+                  {
+                    Ref: 'AWS::Region',
+                  },
+                  '.amazonaws.com',
+                ],
+              ],
+            },
+          },
+        },
+        Effect: 'Allow',
+        Principal: {
+          AWS: '*',
+        },
+        Resource: '*',
+      });
+    });
     // it('outputs ProxyEndpoint', () => {
     //   template.hasOutput('ProxyEndpoint', {});
     // });

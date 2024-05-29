@@ -264,6 +264,7 @@ export class Aurora extends Construct {
 
   constructor(scope: Construct, id: Namer, props: AuroraProps) {
     super(scope, id.pascal);
+    const stack = Stack.of(this);
 
     if (!props.skipAddRotationMultiUser && !props.skipProxy) {
       Annotations.of(this).addWarning(
@@ -274,6 +275,21 @@ export class Aurora extends Construct {
     const schemas = props.schemas ?? ['public'];
 
     const encryptionKey = (this.kmsKey = props.kmsKey);
+    encryptionKey.addToResourcePolicy(
+      new aws_iam.PolicyStatement({
+        principals: [new aws_iam.AnyPrincipal()],
+        actions: ['kms:Encrypt', 'kms:Decrypt', 'kms:ReEncrypt', 'kms:CreateGrant', 'kms:DescribeKey'],
+        sid: 'AllowSecretsManagerAccess',
+        resources: ['*'],
+        conditions: {
+          StringEquals: {
+            'kms:ViaService': `secretsmanager.${stack.region}.amazonaws.com`,
+            'kms:CallerAccount': stack.account,
+          },
+        },
+      }),
+    );
+
     const instanceType =
       props.instanceType || aws_ec2.InstanceType.of(aws_ec2.InstanceClass.T4G, aws_ec2.InstanceSize.MEDIUM);
     if (instanceType.architecture !== aws_ec2.InstanceArchitecture.ARM_64) {
