@@ -25,8 +25,8 @@ importers:
         version: 1.0.4
     devDependencies:
       '@time-loop/clickup-projen':
-        specifier: ^1.11.1
-        version: 1.11.1(projen@0.81.17(constructs@10.0.5))
+        specifier: ^1.12.2
+        version: 1.12.2(projen@0.81.17(constructs@10.0.5))
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.12
@@ -624,6 +624,7 @@ packages:
   '@humanwhocodes/config-array@0.11.14':
     resolution: {integrity: sha512-3T8LkOmg45BV5FICb15QQMsyUSWrQ8AygVfC7ZG32zOalnqrilm018ZVCw0eapXux8FtA33q8PSRSstjee3jSg==}
     engines: {node: '>=10.10.0'}
+    deprecated: Use @eslint/config-array instead
 
   '@humanwhocodes/module-importer@1.0.1':
     resolution: {integrity: sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA==}
@@ -631,6 +632,7 @@ packages:
 
   '@humanwhocodes/object-schema@2.0.3':
     resolution: {integrity: sha512-93zYdMES/c1D69yZiKDBj0V24vqNzB/koF26KPaagAfd3P/4gUlh3Dys5ogAK+Exi9QyzlD8x/08Zt7wIKcDcA==}
+    deprecated: Use @eslint/object-schema instead
 
   '@hutson/parse-repository-url@3.0.2':
     resolution: {integrity: sha512-H9XAx3hc0BQHY6l+IFSWHDySypcXsvsuLhgYLUGywmJ5pswRVQJUHpOsobnLYp2ZUaUlKiKDrgWWhosOwAEM8Q==}
@@ -953,8 +955,8 @@ packages:
     resolution: {integrity: sha512-+fEXJxGDLCoqRKVSmo0auGxaqbiCo+8oph+4auefYjaNxjOLKSY2MxVQfRzo65PaZv4fr+5lWg+au7vSuJJ/zw==}
     engines: {node: '>=16.0.0'}
 
-  '@time-loop/clickup-projen@1.11.1':
-    resolution: {integrity: sha512-mS8MiCb5S6sY6GUE4HtgMsZ0P1RxZMKsnJ/Bve0bmOig39OckcyiYGo02txrHa3wUTS24tSBxwiD/bow8/J3Qw==, tarball: https://npm.pkg.github.com/download/@time-loop/clickup-projen/1.11.1/fbd4cdd0f111f40040bd6155fcae4c9a6c6179dc}
+  '@time-loop/clickup-projen@1.12.2':
+    resolution: {integrity: sha512-JMXw7jNRLfz0B5AQoteJ4mpFiPm7RwVxIuV6IcgpCyJqMZ18p0+CBKJ3hLPVaIoRogtU7ZSYc0mp1PSDwsBDsQ==, tarball: https://npm.pkg.github.com/download/@time-loop/clickup-projen/1.12.2/1f0b6e7961ffda58b1f73492da74d10b8c3a42f0}
     engines: {node: '>= 18.17.1'}
     peerDependencies:
       projen: ^0.81.8
@@ -2966,6 +2968,10 @@ packages:
   q@1.5.1:
     resolution: {integrity: sha512-kV/CThkXo6xyFEZUugw/+pIOywXcDbFYgSct5cT3gqlbkBE1SJdwy6UQoZvodiWF/ckQLZyDE/Bu1M6gVu5lVw==}
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
+    deprecated: |-
+      You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+
+      (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
@@ -3430,8 +3436,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  typescript@5.5.0-dev.20240531:
-    resolution: {integrity: sha512-OzmPvUfcE/QfBFZGl+a976k3SCEo26/eGhDEOSz/gGUTWCOqoLjdBFgtQx9OJRKLBMJd+oI59BdRC/cbtDa11g==}
+  typescript@5.6.0-dev.20240630:
+    resolution: {integrity: sha512-AZ+Ec8/v9wH+iGZ2P0tmrEQxVtAasvQb7ezcxVKFlg+MwY0iylQVjBt/gKp8ppCpxJMkEPX52rFbC3Zdc9tEBw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -4995,7 +5001,7 @@ snapshots:
       '@smithy/types': 3.0.0
       tslib: 2.6.2
 
-  '@time-loop/clickup-projen@1.11.1(projen@0.81.17(constructs@10.0.5))':
+  '@time-loop/clickup-projen@1.12.2(projen@0.81.17(constructs@10.0.5))':
     dependencies:
       projen: 0.81.17(constructs@10.0.5)
 
@@ -5772,7 +5778,7 @@ snapshots:
     dependencies:
       semver: 7.6.2
       shelljs: 0.8.5
-      typescript: 5.5.0-dev.20240531
+      typescript: 5.6.0-dev.20240630
 
   electron-to-chromium@1.4.762: {}
 
@@ -7924,7 +7930,7 @@ snapshots:
 
   typescript@5.3.3: {}
 
-  typescript@5.5.0-dev.20240531: {}
+  typescript@5.6.0-dev.20240630: {}
 
   uglify-js@3.17.4:
     optional: true

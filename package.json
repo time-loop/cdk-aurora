@@ -35,7 +35,7 @@
     "organization": true
   },
   "devDependencies": {
-    "@time-loop/clickup-projen": "^1.11.1",
+    "@time-loop/clickup-projen": "^1.12.2",
     "@types/jest": "^29.5.12",
     "@types/node": "^18",
     "@types/pg": "^8.11.6",
