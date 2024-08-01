@@ -25,8 +25,8 @@ importers:
         version: 1.0.4
     devDependencies:
       '@time-loop/clickup-projen':
-        specifier: ^1.12.2
-        version: 1.12.2(projen@0.81.17(constructs@10.0.5))
+        specifier: ^1.13.0
+        version: 1.13.0(projen@0.81.17(constructs@10.0.5))
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.12
@@ -978,8 +978,8 @@ packages:
     resolution: {integrity: sha512-4pP0EV3iTsexDx+8PPGAKCQpd/6hsQBaQhqWzU4hqKPHN5epPsxKbvUTIiYIHTxaKt6/kEaqPBpu/ufvfbrRzw==}
     engines: {node: '>=16.0.0'}
 
-  '@time-loop/clickup-projen@1.12.2':
-    resolution: {integrity: sha512-JMXw7jNRLfz0B5AQoteJ4mpFiPm7RwVxIuV6IcgpCyJqMZ18p0+CBKJ3hLPVaIoRogtU7ZSYc0mp1PSDwsBDsQ==, tarball: https://npm.pkg.github.com/download/@time-loop/clickup-projen/1.12.2/1f0b6e7961ffda58b1f73492da74d10b8c3a42f0}
+  '@time-loop/clickup-projen@1.13.0':
+    resolution: {integrity: sha512-1ybVliyVJCA9/7UmkqGv3d59G4qSRj6HVSTx1wcGSTox1VzECRiuIsU3H7SJWK41D1yuHjJqtC142no4Ns4I1w==, tarball: https://npm.pkg.github.com/download/@time-loop/clickup-projen/1.13.0/4467749d836c3481f53a68b14069ad66b99d1e9c}
     engines: {node: '>= 18.17.1'}
     peerDependencies:
       projen: ^0.81.8
@@ -3461,8 +3461,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  typescript@5.6.0-dev.20240728:
-    resolution: {integrity: sha512-dVgfcT0kPaFVh9d6PoD+qOp5gLkeTpvn3k0AO/R5+AlNn5+Co3Ey4shTVD4J4nudUqyibN1SMWYrcrVgQXaE2A==}
+  typescript@5.6.0-dev.20240731:
+    resolution: {integrity: sha512-XNueWVxo4buZCEMor0GB/x7ZpzbPzowRNc42fznRinFzGipR+v+Dgelpd6cJvdkN7/TSFASN2M2jQxDeZnk95A==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -5043,7 +5043,7 @@ snapshots:
       '@smithy/types': 3.3.0
       tslib: 2.6.2
 
-  '@time-loop/clickup-projen@1.12.2(projen@0.81.17(constructs@10.0.5))':
+  '@time-loop/clickup-projen@1.13.0(projen@0.81.17(constructs@10.0.5))':
     dependencies:
       projen: 0.81.17(constructs@10.0.5)
 
@@ -5808,7 +5808,7 @@ snapshots:
     dependencies:
       semver: 7.6.2
       shelljs: 0.8.5
-      typescript: 5.6.0-dev.20240728
+      typescript: 5.6.0-dev.20240731
 
   ejs@3.1.10:
     dependencies:
@@ -7972,7 +7972,7 @@ snapshots:
 
   typescript@5.3.3: {}
 
-  typescript@5.6.0-dev.20240728: {}
+  typescript@5.6.0-dev.20240731: {}
 
   uglify-js@3.17.4:
     optional: true
