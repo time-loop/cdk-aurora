@@ -25,8 +25,8 @@ importers:
         version: 1.0.4
     devDependencies:
       '@time-loop/clickup-projen':
-        specifier: ^1.13.2
-        version: 1.13.2(projen@0.86.7(constructs@10.0.5))
+        specifier: ^1.13.3
+        version: 1.13.3(projen@0.87.4(constructs@10.0.5))
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.12
@@ -109,8 +109,8 @@ importers:
         specifier: ^3.3.3
         version: 3.3.3
       projen:
-        specifier: ^0.86.7
-        version: 0.86.7(constructs@10.0.5)
+        specifier: ^0.87.4
+        version: 0.87.4(constructs@10.0.5)
       sinon:
         specifier: ^18.0.0
         version: 18.0.0
@@ -986,11 +986,11 @@ packages:
     resolution: {integrity: sha512-4pP0EV3iTsexDx+8PPGAKCQpd/6hsQBaQhqWzU4hqKPHN5epPsxKbvUTIiYIHTxaKt6/kEaqPBpu/ufvfbrRzw==}
     engines: {node: '>=16.0.0'}
 
-  '@time-loop/clickup-projen@1.13.2':
-    resolution: {integrity: sha512-161UQiklCwKWA9XbQIcvl3z4iHbi4UvcFLa7b/IDSOZFW641lOejr39T6/lomBsPlGschGs8wO2VpoEDoRKo/g==, tarball: https://npm.pkg.github.com/download/@time-loop/clickup-projen/1.13.2/955b19a4c8c5857ac3a30b3cd2fddfa429aa365d}
+  '@time-loop/clickup-projen@1.13.3':
+    resolution: {integrity: sha512-6Dy+reVqvjYj+LcpT4oxEJjviCSMPJimNTPr9O/7gE88Qxy/dFt9hEew6+CCQlSO2V3lFlPg5VnZyoPuzaE0sw==, tarball: https://npm.pkg.github.com/download/@time-loop/clickup-projen/1.13.3/cc6fd046ee5f9a2304f46341c48d49821a84b217}
     engines: {node: '>= 18.17.1'}
     peerDependencies:
-      projen: ^0.86.7
+      projen: ^0.87.0
     bundledDependencies:
       - cson-parser
       - semver
@@ -3050,8 +3050,8 @@ packages:
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
 
-  projen@0.86.7:
-    resolution: {integrity: sha512-bNJVggJggmKaNGwoQ0FK1OgVbLv7Uf3hzKRkU3n5R4LhcfGoLFWvvZ9Y4fI/+FEowqhNrnukiG8Z2PhIMjuxwg==}
+  projen@0.87.4:
+    resolution: {integrity: sha512-PJA8xQubV/1x5S4xbP2uazpkTd5zYb7JqEprGxNZ+KNsWUab0MK2cXeYgW6zp/xpITiD+l9Z0fR5TG83OyU6nQ==}
     engines: {node: '>= 16.0.0'}
     hasBin: true
     peerDependencies:
@@ -3565,8 +3565,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  typescript@5.7.0-dev.20240903:
-    resolution: {integrity: sha512-XTUc5uVwBbLlT0v3FqTx9sDN1MLQnT5mwSC3JefCrcKT6Zv+rPcQE7HLKM9IsrNiM1tiaQvamJTgVH0S+UMH2A==}
+  typescript@5.7.0-dev.20240930:
+    resolution: {integrity: sha512-mGW96cpbwcYuc264UPqGpKBLNebFFtVEXRLPwSwxVEub9tSyMI+XGFGxsznop7pU8E1ntx4OC4cN1n5MnzO0+Q==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -5207,9 +5207,9 @@ snapshots:
       '@smithy/types': 3.3.0
       tslib: 2.6.2
 
-  '@time-loop/clickup-projen@1.13.2(projen@0.86.7(constructs@10.0.5))':
+  '@time-loop/clickup-projen@1.13.3(projen@0.87.4(constructs@10.0.5))':
     dependencies:
-      projen: 0.86.7(constructs@10.0.5)
+      projen: 0.87.4(constructs@10.0.5)
 
   '@tsconfig/node10@1.0.11': {}
 
@@ -5995,7 +5995,7 @@ snapshots:
     dependencies:
       semver: 7.6.2
       shelljs: 0.8.5
-      typescript: 5.7.0-dev.20240903
+      typescript: 5.7.0-dev.20240930
 
   ejs@3.1.10:
     dependencies:
@@ -7724,7 +7724,7 @@ snapshots:
 
   process-nextick-args@2.0.1: {}
 
-  projen@0.86.7(constructs@10.0.5):
+  projen@0.87.4(constructs@10.0.5):
     dependencies:
       constructs: 10.0.5
 
@@ -8240,7 +8240,7 @@ snapshots:
 
   typescript@5.3.3: {}
 
-  typescript@5.7.0-dev.20240903: {}
+  typescript@5.7.0-dev.20240930: {}
 
   uglify-js@3.17.4:
     optional: true

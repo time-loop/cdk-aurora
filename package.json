@@ -35,7 +35,7 @@
     "organization": true
   },
   "devDependencies": {
-    "@time-loop/clickup-projen": "^1.13.2",
+    "@time-loop/clickup-projen": "^1.13.3",
     "@types/jest": "^29.5.12",
     "@types/node": "^18",
     "@types/pg": "^8.11.6",
@@ -63,7 +63,7 @@
     "jsii-rosetta": "~5.3.0",
     "multi-convention-namer": "0.1.12",
     "prettier": "^3.3.3",
-    "projen": "^0.86.7",
+    "projen": "^0.87.4",
     "sinon": "^18.0.0",
     "sinon-spy-utils": "^1.0.6",
     "ts-jest": "^29.2.3",
